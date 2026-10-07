@@ -1,0 +1,168 @@
+.section {
+  padding: 34px 0 8px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 0 var(--page-pad);
+}
+
+.section-head h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.see-all {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-red);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.see-all:hover {
+  opacity: 0.8;
+}
+
+.movie-row {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 2px var(--page-pad) 12px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--page-pad);
+  scrollbar-width: none;
+}
+
+.movie-row::-webkit-scrollbar {
+  display: none;
+}
+
+.movie-card,
+.soon-card {
+  scroll-snap-align: start;
+  background: var(--bg-secondary);
+  border-radius: 18px;
+}
+
+.movie-card {
+  display: flex;
+  flex: 0 0 min(220px, calc(100vw - 48px));
+  flex-direction: column;
+  padding: 10px;
+}
+
+.poster {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.poster--portrait {
+  aspect-ratio: 2 / 3;
+}
+
+.poster--landscape {
+  height: 118px;
+}
+
+.poster-placeholder {
+  position: relative;
+  overflow: hidden;
+}
+
+.poster-horizon {
+  position: absolute;
+  top: 62%;
+  right: 14%;
+  left: 14%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.movie-card-body,
+.soon-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.movie-card-body {
+  flex: 1;
+  padding: 12px 6px 6px;
+}
+
+.movie-card-body h3,
+.soon-card-body h3 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.movie-meta,
+.price {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.price {
+  font-size: 13px;
+}
+
+.movie-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.soon-card {
+  display: grid;
+  flex: 0 0 min(440px, calc(100vw - 48px));
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+}
+
+.soon-card-body {
+  min-width: 0;
+  padding-right: 4px;
+}
+
+.soon-card-body h3 {
+  font-size: 16px;
+}
+
+.release {
+  color: var(--accent-red);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 640px) {
+  .soon-card {
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .poster--landscape {
+    height: 108px;
+  }
+}

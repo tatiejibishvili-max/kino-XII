@@ -1,0 +1,187 @@
+@import "./header.css";
+@import "./hero.css";
+@import "./movies.css";
+@import "./footer.css";
+
+:root {
+  --bg: #070c1c;
+  --bg-secondary: #1e2031;
+  --bg-tertiary: #2a2c3d;
+  --text: #ffffff;
+  --text-muted: #a9a9a9;
+  --text-secondary: #505261;
+  --accent-red: #ec3013;
+  --accent-green: #4ade80;
+  --accent-orange: #e27e04;
+  --tint-white: rgba(255, 255, 255, 0.1);
+  --tint-red: rgba(236, 48, 19, 0.1);
+  --tint-green: rgba(74, 222, 128, 0.1);
+  --font: "Poppins", system-ui, sans-serif;
+  --page-pad: 16px;
+  color-scheme: dark;
+}
+
+@media (min-width: 720px) {
+  :root {
+    --page-pad: 32px;
+  }
+}
+
+@media (min-width: 1100px) {
+  :root {
+    --page-pad: 56px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-x: clip;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: 0;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.page {
+  min-height: 100vh;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.logo-name {
+  color: var(--text);
+}
+
+.logo-mark {
+  color: var(--accent-red);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, filter 0.15s ease;
+}
+
+.btn--md {
+  padding: 12px 20px;
+  font-size: 14px;
+}
+
+.btn--sm {
+  padding: 9px 14px;
+  font-size: 13px;
+}
+
+.btn--primary {
+  background: var(--accent-red);
+  color: #ffffff;
+}
+
+.btn--primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn--light {
+  background: #ffffff;
+  color: #14151f;
+}
+
+.btn--light:hover {
+  background: #f3f3f3;
+}
+
+.btn--ghost {
+  background: var(--bg-tertiary);
+  color: #ffffff;
+}
+
+.btn--ghost:hover {
+  background: #35384c;
+}
+
+.btn--outline {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-weight: 500;
+}
+
+.btn--outline:hover {
+  background: var(--tint-white);
+}
+
+.age-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.age-badge--green {
+  background: var(--tint-green);
+  color: var(--accent-green);
+}
+
+.age-badge--red {
+  background: var(--tint-red);
+  color: var(--accent-red);
+}
+
+.age-badge--orange {
+  background: rgba(226, 126, 4, 0.15);
+  color: var(--accent-orange);
+}

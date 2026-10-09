@@ -1,6 +1,6 @@
+import { Link } from "react-router-dom";
 import type { Movie } from "../types/movie";
 import AgeBadge from "./AgeBadge";
-import Button from "./Button";
 import Poster from "./Poster";
 
 interface MovieCardProps {
@@ -16,10 +16,12 @@ export default function MovieCard({ movie }: MovieCardProps) {
         <p className="movie-meta">
           {movie.genre} · {movie.duration}
         </p>
-        <AgeBadge rating={movie.ageRating} />
+        <AgeBadge rating={movie.ageRating} tone="red" />
         <div className="movie-card-footer">
           <p className="price">{movie.priceLabel}</p>
-          <Button size="sm">Buy Ticket</Button>
+          <Link className="btn btn--primary btn--sm" to={`/movies/${movie.id}`}>
+            Buy Ticket
+          </Link>
         </div>
       </div>
     </article>

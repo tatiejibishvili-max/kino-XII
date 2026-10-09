@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import heroFigure from "../assets/hero-figure.svg";
 import { heroSlides } from "../data/home";
-import Button from "./Button";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, TicketIcon } from "./Icons";
 
-export default function Hero() {
+export default function HeroSection() {
   const [index, setIndex] = useState(0);
   const slide = heroSlides[index];
   const count = heroSlides.length;
@@ -45,11 +45,13 @@ export default function Hero() {
         </ul>
         <p className="hero-description">{slide.description}</p>
         <div className="hero-actions">
-          <Button>
+          <Link className="btn btn--primary btn--md" to={`/movies/${slide.id}`}>
             <TicketIcon />
             Buy tickets
-          </Button>
-          <Button variant="ghost">All sessions</Button>
+          </Link>
+          <Link className="btn btn--ghost btn--md" to="/sessions">
+            All sessions
+          </Link>
         </div>
       </div>
 

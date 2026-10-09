@@ -1,5 +1,13 @@
 .section {
-  padding: 34px 0 8px;
+  padding: 28px 0 6px;
+}
+
+.now-playing {
+  padding-top: 36px;
+}
+
+.coming-soon {
+  padding-top: 18px;
 }
 
 .section-head {
@@ -7,14 +15,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   padding: 0 var(--page-pad);
 }
 
 .section-head h2 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .see-all {
@@ -24,6 +32,7 @@
   color: var(--accent-red);
   font-size: 14px;
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -37,9 +46,9 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  gap: 16px;
+  gap: 18px;
   overflow-x: auto;
-  padding: 2px var(--page-pad) 12px;
+  padding: 2px var(--page-pad) 16px;
   scroll-snap-type: x mandatory;
   scroll-padding-inline: var(--page-pad);
   scrollbar-width: none;
@@ -53,14 +62,14 @@
 .soon-card {
   scroll-snap-align: start;
   background: var(--bg-secondary);
-  border-radius: 18px;
+  border-radius: 16px;
 }
 
 .movie-card {
   display: flex;
-  flex: 0 0 min(220px, calc(100vw - 48px));
+  flex: 0 0 min(232px, calc(100vw - 48px));
   flex-direction: column;
-  padding: 10px;
+  padding: 10px 10px 14px;
 }
 
 .poster {
@@ -74,7 +83,7 @@
 }
 
 .poster--landscape {
-  height: 118px;
+  height: 126px;
 }
 
 .poster-placeholder {
@@ -101,7 +110,7 @@
 
 .movie-card-body {
   flex: 1;
-  padding: 12px 6px 6px;
+  padding: 14px 6px 2px;
 }
 
 .movie-card-body h3,
@@ -133,9 +142,9 @@
 
 .soon-card {
   display: grid;
-  flex: 0 0 min(440px, calc(100vw - 48px));
-  grid-template-columns: 168px minmax(0, 1fr);
-  gap: 14px;
+  flex: 0 0 min(470px, calc(100vw - 48px));
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
   padding: 12px;
 }

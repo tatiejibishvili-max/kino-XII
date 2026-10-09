@@ -18,7 +18,7 @@ export default function ComingSoonCard({ movie }: ComingSoonCardProps) {
         <p className="movie-meta">
           {movie.genre} · {movie.duration}
         </p>
-        <AgeBadge rating={movie.ageRating} />
+        <AgeBadge rating={movie.ageRating} tone="green" />
         <Button variant="outline" size="sm">
           <BellIcon />
           Notify Me

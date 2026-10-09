@@ -1,18 +1,23 @@
+import { NavLink } from "react-router-dom";
 import Button from "./Button";
 import { SearchIcon } from "./Icons";
 import Logo from "./Logo";
 
-export default function Header() {
+interface HeaderProps {
+  variant?: "overlay" | "solid";
+}
+
+export default function Header({ variant = "overlay" }: HeaderProps) {
   return (
-    <header className="header">
+    <header className={variant === "solid" ? "header header--solid" : "header"}>
       <div className="header-logo">
         <Logo />
       </div>
 
       <nav className="nav" aria-label="Primary">
-        <button type="button" className="nav-link">
+        <NavLink to="/sessions" className={({ isActive }) => (isActive ? "nav-link nav-link--active" : "nav-link")}>
           Sessions
-        </button>
+        </NavLink>
       </nav>
 
       <form className="search" role="search" onSubmit={(event) => event.preventDefault()}>

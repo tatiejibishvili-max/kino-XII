@@ -10,6 +10,14 @@
   padding: 22px var(--page-pad);
 }
 
+.header--solid {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .nav-link {
   padding: 0;
   border: 0;
@@ -18,11 +26,13 @@
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.16em;
+  text-decoration: none;
   text-transform: uppercase;
   cursor: pointer;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.nav-link--active {
   color: var(--text);
 }
 

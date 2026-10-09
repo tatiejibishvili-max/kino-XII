@@ -16,7 +16,7 @@
   --tint-white: rgba(255, 255, 255, 0.1);
   --tint-red: rgba(236, 48, 19, 0.1);
   --tint-green: rgba(74, 222, 128, 0.1);
-  --font: "Poppins", system-ui, sans-serif;
+  --font: "Poppins", "Noto Sans Georgian", system-ui, sans-serif;
   --page-pad: 16px;
   color-scheme: dark;
 }
@@ -29,7 +29,7 @@
 
 @media (min-width: 1100px) {
   :root {
-    --page-pad: 56px;
+    --page-pad: 48px;
   }
 }
 
@@ -107,18 +107,19 @@ img {
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
   flex-shrink: 0;
   transition: background-color 0.15s ease, filter 0.15s ease;
 }
 
 .btn--md {
-  padding: 12px 20px;
+  padding: 11px 18px;
   font-size: 14px;
 }
 
 .btn--sm {
-  padding: 9px 14px;
+  padding: 8px 14px;
   font-size: 13px;
 }
 
@@ -150,9 +151,9 @@ img {
 }
 
 .btn--outline {
-  background: transparent;
+  background: var(--bg-tertiary);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   font-weight: 500;
 }
 

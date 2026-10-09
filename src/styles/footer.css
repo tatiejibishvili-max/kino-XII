@@ -3,8 +3,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 28px;
-  padding: 22px var(--page-pad) 28px;
+  margin-top: 20px;
+  padding: 26px var(--page-pad) 32px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 

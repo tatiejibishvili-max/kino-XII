@@ -1,5 +1,6 @@
 interface AgeBadgeProps {
   rating: string;
+  tone?: "red" | "green" | "orange";
 }
 
 function badgeTone(rating: string) {
@@ -8,6 +9,6 @@ function badgeTone(rating: string) {
   return "red";
 }
 
-export default function AgeBadge({ rating }: AgeBadgeProps) {
-  return <span className={`age-badge age-badge--${badgeTone(rating)}`}>{rating}</span>;
+export default function AgeBadge({ rating, tone }: AgeBadgeProps) {
+  return <span className={`age-badge age-badge--${tone ?? badgeTone(rating)}`}>{rating}</span>;
 }

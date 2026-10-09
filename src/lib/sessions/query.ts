@@ -12,7 +12,6 @@ import type {
 } from "../../types/session";
 
 const FORMAT_IDS = FORMATS.map((item) => item.id);
-const LANGUAGE_IDS = LANGUAGES.map((item) => item.id);
 const TIME_IDS = TIMES.map((item) => item.id);
 const SORT_IDS = SORTS.map((item) => item.id);
 const VENUE_IDS = VENUES.map((item) => item.id);
@@ -103,7 +102,10 @@ function parseFilters(params: URLSearchParams, catalog: SessionCatalog): Session
       venues: uniqueValid(readList(params, "venue"), VENUE_IDS),
       date: dateValue && catalog.dates.includes(dateValue) ? dateValue : catalog.today,
       formats: uniqueValid(readList(params, "format"), FORMAT_IDS),
-      languages: uniqueValid(readList(params, "language"), LANGUAGE_IDS),
+      languages: uniqueValid(
+        readList(params, "language"),
+        catalog.languageChoices.map((language) => language.id),
+      ),
       times: uniqueValid(readList(params, "time"), TIME_IDS),
       sort: sortValue && SORT_IDS.includes(sortValue as SortId) ? (sortValue as SortId) : DEFAULT_SORT,
       page: pageNumber < 1 ? 1 : pageNumber,
@@ -139,7 +141,7 @@ function compareSessions(left: Session, right: Session, sort: SortId): number {
 export function toSessionView(session: Session, catalog: SessionCatalog): SessionView {
   const venue = catalog.venues.find((item) => item.id === session.venueId);
   const format = FORMATS.find((item) => item.id === session.format);
-  const language = LANGUAGES.find((item) => item.id === session.language);
+  const language = catalog.languageChoices.find((item) => item.id === session.language) ?? LANGUAGES.find((item) => item.id === session.language);
 
   return {
     id: session.id,

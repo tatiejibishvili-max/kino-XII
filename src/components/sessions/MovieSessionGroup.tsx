@@ -18,7 +18,7 @@ export default function MovieSessionGroup({ group }: MovieSessionGroupProps) {
   return (
     <article className="movie-group">
       <div className="movie-info">
-        <Poster title={group.movie.title} theme={group.movie.poster} />
+        <Poster title={group.movie.title} theme={group.movie.poster} imageSrc={group.movie.posterUrl ?? undefined} />
         <div>
           <div className="movie-info-title">
             <h3>

@@ -1,17 +1,20 @@
-import { comingSoon } from "../data/home";
+import type { Movie } from "../types/movie";
 import ComingSoonCard from "./ComingSoonCard";
 
-export default function ComingSoonSection() {
+interface ComingSoonSectionProps {
+  movies: Movie[];
+  status: "loading" | "ready" | "error";
+}
+
+export default function ComingSoonSection({ movies, status }: ComingSoonSectionProps) {
   return (
     <section className="section coming-soon" aria-labelledby="coming-soon">
       <div className="section-head">
         <h2 id="coming-soon">COMING SOON...</h2>
-        <button type="button" className="see-all">
-          See all
-        </button>
       </div>
+      {status === "loading" ? <p className="movie-meta">Loading films…</p> : null}
       <div className="movie-row">
-        {comingSoon.map((movie) => (
+        {movies.map((movie) => (
           <ComingSoonCard key={movie.id} movie={movie} />
         ))}
       </div>

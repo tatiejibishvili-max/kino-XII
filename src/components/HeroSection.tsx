@@ -1,34 +1,58 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import heroFigure from "../assets/hero-figure.svg";
-import { heroSlides } from "../data/home";
+import type { FeaturedFilm } from "../services/movies";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, TicketIcon } from "./Icons";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  slides: FeaturedFilm[];
+  status: "loading" | "ready" | "error";
+  onRetry: () => void;
+}
+
+export default function HeroSection({ slides, status, onRetry }: HeroSectionProps) {
   const [index, setIndex] = useState(0);
-  const slide = heroSlides[index];
-  const count = heroSlides.length;
+  const count = slides.length;
+  const slide = slides[index] ?? slides[0];
 
   function showSlide(nextIndex: number) {
+    if (count === 0) return;
     setIndex((nextIndex + count) % count);
   }
+
+  if (status === "loading") {
+    return (
+      <section className="hero" aria-label="Featured films">
+        <p className="hero-description">Loading films…</p>
+      </section>
+    );
+  }
+
+  if (status === "error" || !slide) {
+    return (
+      <section className="hero" aria-label="Featured films">
+        <p className="hero-description">The featured films could not be loaded.</p>
+        <button type="button" className="btn btn--ghost btn--md" onClick={onRetry}>
+          Try again
+        </button>
+      </section>
+    );
+  }
+
+  const backdrop = slide.backdropUrl
+    ? [
+        "linear-gradient(90deg, rgba(7,12,28,0.94) 0%, rgba(7,12,28,0.72) 34%, rgba(7,12,28,0.28) 68%, rgba(7,12,28,0.45) 100%)",
+        "linear-gradient(180deg, rgba(7,12,28,0.2) 0%, rgba(7,12,28,0.05) 40%, #070C1C 100%)",
+        `url("${slide.backdropUrl}")`,
+      ].join(", ")
+    : undefined;
 
   return (
     <section className="hero" aria-roledescription="carousel" aria-label="Featured films">
       <div
         key={slide.id}
         className="hero-backdrop"
-        style={{
-          backgroundColor: "#070C1C",
-          backgroundImage: [
-            "linear-gradient(90deg, rgba(7,12,28,0.96) 0%, rgba(7,12,28,0.9) 28%, rgba(7,12,28,0.55) 48%, rgba(7,12,28,0.12) 70%, rgba(7,12,28,0.4) 100%)",
-            "linear-gradient(180deg, rgba(7,12,28,0.55) 0%, rgba(7,12,28,0.05) 24%, rgba(7,12,28,0.15) 62%, #070C1C 100%)",
-            `radial-gradient(ellipse at ${slide.poster.spotlightX}% 40%, ${slide.poster.accent}66, transparent 46%)`,
-            `radial-gradient(ellipse at ${slide.poster.spotlightX}% 46%, ${slide.poster.from} 0%, ${slide.poster.to} 68%)`,
-          ].join(", "),
-        }}
+        style={backdrop ? { backgroundColor: "#070C1C", backgroundImage: backdrop, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
       />
-      <img className="hero-figure" src={heroFigure} alt="" />
 
       <div className="hero-copy">
         <p className="premiere">{slide.premiereLabel}</p>
@@ -57,7 +81,7 @@ export default function HeroSection() {
 
       <div className="hero-controls">
         <div className="hero-progress">
-          {heroSlides.map((item, itemIndex) => (
+          {slides.map((item, itemIndex) => (
             <button
               key={item.id}
               type="button"

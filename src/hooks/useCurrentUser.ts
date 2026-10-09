@@ -1,9 +1,12 @@
+import { useAuth } from "../auth/useAuth";
 import type { UserProfile } from "../types/user";
 
 /**
- * This app has no signed-in account yet. Age checks stay off until a real
- * profile, with a date of birth, is available from authentication.
+ * Age checks use a date of birth only after the account service returns one.
+ * A missing date leaves the visitor unrestricted, matching a signed-out visit.
  */
 export function useCurrentUser(): UserProfile | null {
-  return null;
+  const { account } = useAuth();
+  if (!account?.dateOfBirth) return null;
+  return { dateOfBirth: account.dateOfBirth };
 }

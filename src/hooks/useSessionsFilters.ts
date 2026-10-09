@@ -8,13 +8,12 @@ import {
   serializeFilters,
   toggleValue,
 } from "../lib/sessions/query";
-import { FORMATS, LANGUAGES, TIMES, VENUES } from "../data/sessionOptions";
+import { FORMATS, TIMES, VENUES } from "../data/sessionOptions";
 import type { FormatId, LanguageId, SessionCatalog, SessionsFilters, SortId, TimeOfDayId } from "../types/session";
 import type { SessionsQueryResult } from "../lib/sessions/query";
 
 const VENUE_ORDER = VENUES.map((venue) => venue.id);
 const FORMAT_ORDER = FORMATS.map((format) => format.id);
-const LANGUAGE_ORDER = LANGUAGES.map((language) => language.id);
 const TIME_ORDER = TIMES.map((time) => time.id);
 
 export function useSessionsFilters(catalog: SessionCatalog | null) {
@@ -57,8 +56,9 @@ export function useSessionsFilters(catalog: SessionCatalog | null) {
       commit({ ...filters, formats: toggleValue(filters.formats, id, FORMAT_ORDER) });
     },
     toggleLanguage(id: LanguageId) {
-      if (!filters) return;
-      commit({ ...filters, languages: toggleValue(filters.languages, id, LANGUAGE_ORDER) });
+      if (!filters || !catalog) return;
+      const order = catalog.languageChoices.map((language) => language.id);
+      commit({ ...filters, languages: toggleValue(filters.languages, id, order) });
     },
     toggleTime(id: TimeOfDayId) {
       if (!filters) return;

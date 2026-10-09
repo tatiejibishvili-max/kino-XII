@@ -1,7 +1,7 @@
 import type { PosterTheme } from "./movie";
 
 export type FormatId = "standard" | "max" | "atmos" | "panorama" | "motion";
-export type LanguageId = "ka_dubbed" | "ka_sub" | "original_sub" | "ru_dubbed";
+export type LanguageId = string;
 export type TimeOfDayId = "morning" | "afternoon" | "evening";
 export type SortId = "showtime_asc" | "showtime_desc" | "price_asc" | "price_desc" | "title_asc";
 
@@ -18,6 +18,7 @@ export interface SessionMovie {
   ageRating: string;
   duration: string;
   poster: PosterTheme;
+  posterUrl: string | null;
 }
 
 export interface Session {
@@ -39,6 +40,7 @@ export interface SessionCatalog {
   sessions: Session[];
   dates: string[];
   today: string;
+  languageChoices: { id: string; label: string }[];
 }
 
 export interface SessionsFilters {

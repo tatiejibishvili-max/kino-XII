@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
-import { nowPlaying } from "../data/home";
+import type { Movie } from "../types/movie";
 import MovieCard from "./MovieCard";
 
-export default function NowPlayingSection() {
+interface NowPlayingSectionProps {
+  movies: Movie[];
+  status: "loading" | "ready" | "error";
+}
+
+export default function NowPlayingSection({ movies, status }: NowPlayingSectionProps) {
   return (
     <section className="section now-playing" aria-labelledby="now-playing">
       <div className="section-head">
@@ -11,8 +16,9 @@ export default function NowPlayingSection() {
           See all
         </Link>
       </div>
+      {status === "loading" ? <p className="movie-meta">Loading films…</p> : null}
       <div className="movie-row">
-        {nowPlaying.map((movie) => (
+        {movies.map((movie) => (
           <MovieCard key={movie.id} movie={movie} />
         ))}
       </div>

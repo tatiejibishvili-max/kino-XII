@@ -49,7 +49,7 @@ export default function SessionsFilters({
         <VenueFilter venues={catalog.venues} selected={filters.venues} onToggle={onToggleVenue} />
         <DateFilter dates={catalog.dates} today={catalog.today} selected={filters.date} onSelect={onSelectDate} />
         <FormatFilter available={formatOptions} selected={filters.formats} onToggle={onToggleFormat} />
-        <LanguageFilter selected={filters.languages} onToggle={onToggleLanguage} />
+        <LanguageFilter options={catalog.languageChoices} selected={filters.languages} onToggle={onToggleLanguage} />
         <TimeOfDayFilter selected={filters.times} onToggle={onToggleTime} />
         <FilterFooter activeCount={activeCount} canClear={canClear} onClear={onClear} />
       </div>

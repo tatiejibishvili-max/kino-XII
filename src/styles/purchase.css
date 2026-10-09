@@ -1,0 +1,400 @@
+.purchase-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 12, 27, 0.55);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.purchase-dialog {
+  position: relative;
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 18px 16px 16px;
+  border: 1px solid #252a3b;
+  border-radius: 20px;
+  background: #080c1b;
+  color: #ffffff;
+}
+
+.purchase-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #9aa0b4;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.purchase-close:hover,
+.purchase-close:focus-visible {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.purchase-head h2 {
+  margin: 0 28px 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.purchase-head p {
+  margin: 0;
+  color: #8d93a6;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.purchase-meta span {
+  display: inline;
+}
+
+.purchase-meta span::before {
+  content: " · ";
+}
+
+.purchase-steps {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px !important;
+  color: #8d93a6;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.purchase-steps .is-current,
+.purchase-success-title {
+  color: #ffffff;
+}
+
+.purchase-success-title {
+  margin-top: 8px !important;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.purchase-block,
+.purchase-warn {
+  margin: 8px 0 0;
+  color: #ff321b;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.purchase-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.purchase-map-panel,
+.purchase-summary,
+.purchase-checkout,
+.purchase-confirm {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: #1e2031;
+}
+
+.purchase-summary h3,
+.purchase-map h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.purchase-muted,
+.purchase-status {
+  margin: 0;
+  color: #8d93a6;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.purchase-status button,
+.purchase-confirm-actions button,
+.purchase-leave button {
+  height: 28px;
+  margin-top: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 14px;
+  background: #ff321b;
+  color: #ffffff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.purchase-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  color: #8d93a6;
+  font-size: 9px;
+}
+
+.purchase-legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.purchase-swatch,
+.purchase-seat {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.purchase-swatch.is-available,
+.purchase-seat.is-available {
+  background: #202233;
+  box-shadow: inset 0 0 0 1px #3a3d52;
+}
+
+.purchase-swatch.is-selected,
+.purchase-seat.is-selected {
+  background: #ff321b;
+}
+
+.purchase-swatch.is-sold,
+.purchase-seat.is-sold {
+  background: #3a3d4f;
+}
+
+.purchase-swatch.is-held,
+.purchase-seat.is-held {
+  background: #e27e04;
+}
+
+.purchase-swatch.is-unavailable,
+.purchase-seat.is-unavailable {
+  background: #505261;
+}
+
+.purchase-map {
+  display: grid;
+  gap: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.purchase-row {
+  display: grid;
+  grid-template-columns: 18px max-content;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.purchase-row > span {
+  color: #8d93a6;
+  font-size: 9px;
+}
+
+.purchase-row > div {
+  display: flex;
+  gap: 4px;
+}
+
+.purchase-seat {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  color: #ffffff;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.purchase-gap {
+  width: 10px;
+  height: 22px;
+}
+
+.purchase-seat:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.purchase-summary ul,
+.purchase-lines,
+.purchase-confirm ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.purchase-summary li,
+.purchase-lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.purchase-summary select,
+.purchase-checkout input {
+  height: 30px;
+  width: 100%;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #202233;
+  color: #ffffff;
+  font: inherit;
+  font-size: 10px;
+}
+
+.purchase-checkout input:focus,
+.purchase-summary select:focus {
+  outline: none;
+  border-color: #ff321b;
+}
+
+.purchase-checkout input[aria-invalid="true"] {
+  border-color: #ff321b;
+}
+
+.purchase-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0 0;
+  font-size: 11px;
+}
+
+.purchase-next {
+  width: 100%;
+  height: 31px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 18px;
+  background: #ff321b;
+  color: #ffffff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.purchase-next:hover:not(:disabled) {
+  background: #ff4a36;
+}
+
+.purchase-next:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.purchase-checkout {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.purchase-checkout label {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.purchase-pay-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.purchase-timer {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.purchase-timer.is-warning {
+  color: #e27e04;
+}
+
+.purchase-confirm {
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+.purchase-confirm p,
+.purchase-confirm li {
+  margin: 6px 0 0;
+}
+
+.purchase-confirm span {
+  display: block;
+  color: #8d93a6;
+  font-size: 10px;
+}
+
+.purchase-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.purchase-leave {
+  position: absolute;
+  inset: auto 16px 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #12141f;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.purchase-leave p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.purchase-leave div {
+  display: flex;
+  gap: 8px;
+}
+
+.purchase-leave button:first-child {
+  background: #2a2c3d;
+}
+
+.purchase-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 700px) {
+  .purchase-body,
+  .purchase-pay-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

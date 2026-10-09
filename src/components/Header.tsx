@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../auth/useAuth";
 import Button from "./Button";
 import { SearchIcon } from "./Icons";
 import Logo from "./Logo";
@@ -8,6 +9,8 @@ interface HeaderProps {
 }
 
 export default function Header({ variant = "overlay" }: HeaderProps) {
+  const { account, openLogin, openRegister, logout } = useAuth();
+
   return (
     <header className={variant === "solid" ? "header header--solid" : "header"}>
       <div className="header-logo">
@@ -26,8 +29,21 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
       </form>
 
       <div className="header-auth">
-        <Button>Sign up</Button>
-        <Button variant="light">Log in</Button>
+        {account ? (
+          <>
+            <span className="header-user">{account.username}</span>
+            <Button variant="light" onClick={logout}>
+              Log out
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={openRegister}>Sign up</Button>
+            <Button variant="light" onClick={openLogin}>
+              Log in
+            </Button>
+          </>
+        )}
       </div>
     </header>
   );

@@ -395,6 +395,12 @@
   display: none;
 }
 
+button.session-card {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .session-card {
   display: flex;
   flex: 0 0 128px;

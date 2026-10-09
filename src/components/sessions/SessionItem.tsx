@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { useStartPurchase } from "../../purchase/usePurchase";
 import type { SessionView } from "../../types/session";
 
 interface SessionItemProps {
@@ -7,6 +7,7 @@ interface SessionItemProps {
 }
 
 export default function SessionItem({ session, unavailable = false }: SessionItemProps) {
+  const startPurchase = useStartPurchase();
   const seatsClass = session.soldOut ? "is-sold-out" : session.lowAvailability ? "is-low" : "is-open";
   const content = (
     <>
@@ -37,8 +38,8 @@ export default function SessionItem({ session, unavailable = false }: SessionIte
   }
 
   return (
-    <Link className="session-card" to={`/movies/${session.movieId}`}>
+    <button type="button" className="session-card" onClick={() => startPurchase(session.id)}>
       {content}
-    </Link>
+    </button>
   );
 }

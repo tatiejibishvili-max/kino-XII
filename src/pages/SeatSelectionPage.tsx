@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { loadSessionCatalog } from "../services/sessions";
+import { loadSessionCatalog, loadSessionSummary } from "../services/sessions";
 
 export default function SeatSelectionPage() {
   const { sessionId } = useParams();
@@ -13,11 +13,15 @@ export default function SeatSelectionPage() {
     let cancelled = false;
 
     loadSessionCatalog()
-      .then((catalog) => {
-        if (cancelled) return;
+      .then(async (catalog) => {
+        if (cancelled || !sessionId) return;
         const session = catalog.sessions.find((item) => item.id === sessionId);
-        if (!session) setMissing(true);
-        else setMovieId(session.movieId);
+        if (session) {
+          setMovieId(session.movieId);
+          return;
+        }
+        const summary = await loadSessionSummary(sessionId);
+        if (!cancelled) setMovieId(summary.movie.id);
       })
       .catch(() => {
         if (!cancelled) setMissing(true);
@@ -28,7 +32,7 @@ export default function SeatSelectionPage() {
     };
   }, [sessionId]);
 
-  if (movieId) return <Navigate to={`/movies/${movieId}`} replace />;
+  if (movieId && sessionId) return <Navigate to={`/movies/${movieId}?purchase=${sessionId}`} replace />;
 
   return (
     <div className="page sessions-page">

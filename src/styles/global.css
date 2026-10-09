@@ -2,6 +2,7 @@
 @import "./hero.css";
 @import "./movies.css";
 @import "./sessions.css";
+@import "./movie-details.css";
 @import "./footer.css";
 
 :root {

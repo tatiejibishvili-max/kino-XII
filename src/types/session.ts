@@ -59,6 +59,7 @@ export interface SessionView {
   startTime: string;
   formatLabel: string;
   languageLabel: string;
+  languageCode?: string;
   venueName: string;
   hall: string;
   price: number;

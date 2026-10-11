@@ -21,8 +21,13 @@ export default function HeroSection({ slides, status, onRetry }: HeroSectionProp
 
   if (status === "loading") {
     return (
-      <section className="hero" aria-label="Featured films">
-        <p className="hero-description">Loading films…</p>
+      <section className="hero" aria-label="Featured films" aria-busy="true">
+        <p className="sr-only">Loading films</p>
+        <div className="hero-copy">
+          <div className="skeleton home-skel-line" />
+          <div className="skeleton home-skel-title" />
+          <div className="skeleton home-skel-copy" />
+        </div>
       </section>
     );
   }

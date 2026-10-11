@@ -1,3 +1,44 @@
+.home-skeletons {
+  display: flex;
+  gap: 16px;
+  padding: 0 var(--page-pad);
+  overflow: hidden;
+}
+
+.home-skel-card {
+  width: 160px;
+  height: 240px;
+  flex: none;
+  border-radius: 12px;
+}
+
+.home-skel-card--wide {
+  width: 280px;
+  height: 180px;
+}
+
+.home-skel-line,
+.home-skel-title,
+.home-skel-copy {
+  margin-bottom: 14px;
+  border-radius: 8px;
+}
+
+.home-skel-line {
+  width: 120px;
+  height: 14px;
+}
+
+.home-skel-title {
+  width: min(420px, 70vw);
+  height: 48px;
+}
+
+.home-skel-copy {
+  width: min(520px, 80vw);
+  height: 64px;
+}
+
 .section {
   padding: 28px 0 6px;
 }

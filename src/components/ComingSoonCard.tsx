@@ -10,7 +10,8 @@ interface ComingSoonCardProps {
 }
 
 export default function ComingSoonCard({ movie }: ComingSoonCardProps) {
-  const { requireAuth } = useAuth();
+  const { requireAuth, pendingActionId } = useAuth();
+  const pending = pendingActionId === movie.id;
 
   return (
     <article className="soon-card">
@@ -25,10 +26,15 @@ export default function ComingSoonCard({ movie }: ComingSoonCardProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => requireAuth({ type: "notify-movie", movieId: movie.id })}
+          disabled={pending}
+          aria-busy={pending}
+          onClick={() => {
+            if (pending) return;
+            requireAuth({ type: "notify-movie", movieId: movie.id });
+          }}
         >
           <BellIcon />
-          Notify Me
+          {pending ? "Notifying..." : "Notify Me"}
         </Button>
       </div>
     </article>

@@ -18,16 +18,16 @@ export const FORMATS: { id: FormatId; label: string }[] = [
 ];
 
 export const LANGUAGES: { id: LanguageId; label: string }[] = [
-  { id: "ka_dubbed", label: "ქართული დუბლიაჟი" },
-  { id: "ka_sub", label: "ქართული სუბტიტრები" },
-  { id: "original_sub", label: "ორიგინალი სუბტიტრებით" },
-  { id: "ru_dubbed", label: "რუსული დუბლიაჟი" },
+  { id: "georgian-dub", label: "Georgian Dub" },
+  { id: "georgian-subtitles", label: "Georgian Subtitles" },
+  { id: "original-subtitles", label: "Original with Subtitles" },
+  { id: "russian-dub", label: "Russian Dub" },
 ];
 
 export const TIMES: { id: TimeOfDayId; label: string; hint: string }[] = [
-  { id: "morning", label: "დილა", hint: "before 12:00" },
-  { id: "afternoon", label: "დღე", hint: "12:00–18:00" },
-  { id: "evening", label: "საღამო", hint: "after 18:00" },
+  { id: "morning", label: "Morning", hint: "before 12:00" },
+  { id: "afternoon", label: "Afternoon", hint: "12:00–18:00" },
+  { id: "evening", label: "Evening", hint: "after 18:00" },
 ];
 
 export const SORTS: { id: SortId; label: string }[] = [

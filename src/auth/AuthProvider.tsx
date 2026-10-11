@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { userMessage } from "../lib/userMessage";
 import { launchPurchase } from "../purchase/launch";
 import { setUnauthorizedHandler } from "../services/api";
 import {
@@ -25,6 +26,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const pendingRef = useRef<PendingAction | null>(null);
   const runningRef = useRef(false);
   const submittingRef = useRef(false);
@@ -75,6 +77,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     async (action: PendingAction) => {
       if (runningRef.current) return;
       runningRef.current = true;
+      setPendingActionId(action.type === "notify-movie" ? action.movieId : action.type);
       try {
         if (action.type === "navigate") {
           navigate(action.path);
@@ -86,9 +89,16 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         }
         await subscribeToComingSoon(action.movieId);
       } catch (error) {
-        setNotice(error instanceof Error ? error.message : "The action could not be completed.");
+        if (error instanceof AuthApiError && error.status === 401 && action.type === "notify-movie") {
+          pendingRef.current = action;
+          setModal("login");
+          setNotice("Your session expired. Sign in to finish notifying for this film.");
+          return;
+        }
+        setNotice(userMessage(error, "The action could not be completed."));
       } finally {
         runningRef.current = false;
+        setPendingActionId(null);
       }
     },
     [navigate],
@@ -121,7 +131,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         const details = error instanceof AuthApiError ? error.fieldErrors : {};
         setFieldErrors(details);
         if (Object.keys(details).length === 0) {
-          setFormError(error instanceof Error ? error.message : "Login failed.");
+          setFormError(
+            error instanceof AuthApiError && error.status === 401
+              ? "The email or password is incorrect."
+              : userMessage(error, "Login failed."),
+          );
         }
       } finally {
         submittingRef.current = false;
@@ -150,7 +164,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         const details = error instanceof AuthApiError ? error.fieldErrors : {};
         setFieldErrors(details);
         if (Object.keys(details).length === 0) {
-          setFormError(error instanceof Error ? error.message : "Registration failed.");
+          setFormError(userMessage(error, "Registration failed."));
         }
       } finally {
         submittingRef.current = false;
@@ -213,9 +227,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       saveProfile,
       requireAuth,
       notice,
+      pendingActionId,
       dismissNotice: () => setNotice(null),
     }),
-    [account, closeModal, fieldErrors, formError, login, logout, modal, notice, openLogin, openRegister, register, requireAuth, saveProfile, submitting],
+    [account, closeModal, fieldErrors, formError, login, logout, modal, notice, openLogin, openRegister, pendingActionId, register, requireAuth, saveProfile, submitting],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

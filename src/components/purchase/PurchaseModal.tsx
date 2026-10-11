@@ -22,6 +22,9 @@ import {
   digitsOnly,
 } from "../../lib/purchase";
 import { usePurchase } from "../../purchase/usePurchase";
+import FieldStatus from "../form/FieldStatus";
+import { useDialog } from "../../lib/useDialog";
+import { userMessage } from "../../lib/userMessage";
 import { buyerFromAccount, fetchHallMap, holdSeats, PurchaseApiError, releaseHold, submitOrder } from "../../services/purchase";
 import { loadSessionSummary, type SessionSummary } from "../../services/sessions";
 import type { BuyerDetails, ConfirmedOrder, HallMap, SeatHold, SelectedSeat, TicketType } from "../../types/purchase";
@@ -101,7 +104,7 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
         if (cancelled) return;
         setMap(null);
         setMapStatus("error");
-        setMapError(error instanceof Error ? error.message : "The hall map could not be loaded.");
+        setMapError(userMessage(error, "The hall map could not be loaded."));
       });
     return () => {
       cancelled = true;
@@ -132,26 +135,18 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
   }, [hold]);
 
   const requestCloseRef = useRef<() => void>(() => {});
+  const dialogRef = useDialog<HTMLDivElement>(true, () => requestCloseRef.current());
 
   useEffect(() => {
     requestCloseRef.current = requestClose;
   });
 
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") requestCloseRef.current();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
-
   function requestClose() {
     if (holdingRef.current) return;
+    if (leaveWarning) {
+      setLeaveWarning(false);
+      return;
+    }
     if (hold) {
       setLeaveWarning(true);
       return;
@@ -215,8 +210,10 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
             : error.message,
         );
         setMapAttempt((attempt) => attempt + 1);
+      } else if (error instanceof PurchaseApiError && error.status === 401) {
+        setHoldMessage("Your session expired. Sign in again, then hold these seats.");
       } else {
-        setHoldMessage(error instanceof Error ? error.message : "The seats could not be held.");
+        setHoldMessage(userMessage(error, "The seats could not be held."));
       }
     } finally {
       holdingRef.current = false;
@@ -237,6 +234,7 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
       }}
     >
       <div
+        ref={dialogRef}
         className="purchase-dialog"
         role="dialog"
         aria-modal="true"
@@ -562,6 +560,20 @@ function CheckoutStep({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusInvalid = useRef(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!focusInvalid.current) return;
+    focusInvalid.current = false;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  });
+
+  function shown(name: string, message?: string) {
+    return touched[name] || submitted ? message || "" : "";
+  }
 
   useEffect(() => {
     const tick = () => {
@@ -585,10 +597,14 @@ function CheckoutStep({
     if (submittingRef.current) return;
     const nextBuyerErrors = validateBuyer(buyer);
     const nextPaymentErrors = validatePayment({ cardNumber, expiry, cvv });
+    setSubmitted(true);
     onFieldErrors(nextBuyerErrors);
     setPaymentErrors(nextPaymentErrors);
     setFormError(null);
-    if (Object.keys(nextBuyerErrors).length > 0 || Object.keys(nextPaymentErrors).length > 0) return;
+    if (Object.keys(nextBuyerErrors).length > 0 || Object.keys(nextPaymentErrors).length > 0) {
+      focusInvalid.current = true;
+      return;
+    }
     if (holdExpired(hold.expiresAt)) {
       onExpired();
       return;
@@ -612,7 +628,7 @@ function CheckoutStep({
     } catch (error) {
       if (error instanceof PurchaseApiError && error.status === 422 && Object.keys(error.fieldErrors).length === 0) {
         if (error.message === EXPIRED_MESSAGE) onExpired();
-        else setFormError(error.message);
+        else setFormError(userMessage(error, "The order could not be completed."));
       } else if (error instanceof PurchaseApiError && error.status === 422) {
         const buyerMap: Record<string, string> = {};
         const paymentMap: Record<string, string> = {};
@@ -622,10 +638,13 @@ function CheckoutStep({
         }
         onFieldErrors(buyerMap);
         setPaymentErrors(paymentMap);
+        focusInvalid.current = true;
+      } else if (error instanceof PurchaseApiError && error.status === 401) {
+        setFormError("Your session expired. Sign in again, then submit this order once.");
       } else if (error instanceof PurchaseApiError && error.conflict === "seats") {
         onSeatConflict(error.conflictingSeatIds, error.message);
       } else {
-        setFormError(error instanceof Error ? error.message : "The order could not be completed.");
+        setFormError(userMessage(error, "The order could not be completed."));
       }
     } finally {
       submittingRef.current = false;
@@ -634,7 +653,7 @@ function CheckoutStep({
   }
 
   return (
-    <form className="purchase-checkout" onSubmit={(event) => void onSubmit(event)} noValidate>
+    <form ref={formRef} className="purchase-checkout" onSubmit={(event) => void onSubmit(event)} noValidate>
       <p className={`purchase-timer${warning ? " is-warning" : ""}`}>Hold time {remaining}</p>
       <ul className="purchase-lines">
         {selected.map((seat) => (
@@ -651,152 +670,314 @@ function CheckoutStep({
       </p>
       <p className="purchase-muted">Foyer food and drinks are not connected. You can continue without them.</p>
       <p className="purchase-muted">Fees and the final total are confirmed by the order service.</p>
-      <label>
-        Full Name
-        <input
-          name="fullName"
-          autoComplete="name"
-          value={buyer.fullName}
-          aria-invalid={Boolean(buyerErrors.fullName)}
-          onChange={(event) => onBuyer({ ...buyer, fullName: event.target.value })}
-        />
-      </label>
-      {buyerErrors.fullName ? <p className="purchase-warn">{buyerErrors.fullName}</p> : null}
-      <label>
-        Email
-        <input
-          type="email"
-          name="email"
-          autoComplete="email"
-          inputMode="email"
-          value={buyer.email}
-          aria-invalid={Boolean(buyerErrors.email)}
-          onChange={(event) => onBuyer({ ...buyer, email: event.target.value })}
-        />
-      </label>
-      {buyerErrors.email ? <p className="purchase-warn">{buyerErrors.email}</p> : null}
-      <label>
-        Mobile Number
-        <input
-          type="tel"
-          name="mobile"
-          autoComplete="tel"
-          inputMode="tel"
-          value={buyer.mobile}
-          aria-invalid={Boolean(buyerErrors.mobile)}
-          onChange={(event) => onBuyer({ ...buyer, mobile: event.target.value })}
-        />
-      </label>
-      {buyerErrors.mobile ? <p className="purchase-warn">{buyerErrors.mobile}</p> : null}
-      <label>
-        Card Number
-        <input
-          name="cardNumber"
+      <CheckoutField
+        label="Full Name"
+        name="fullName"
+        autoComplete="name"
+        value={buyer.fullName}
+        error={shown("fullName", buyerErrors.fullName)}
+        valid={(touched.fullName || submitted) && !validateBuyer({ ...buyer, fullName: buyer.fullName }).fullName}
+        onBlur={() => {
+          setTouched((current) => ({ ...current, fullName: true }));
+          onFieldErrors({ ...buyerErrors, fullName: validateBuyer(buyer).fullName ?? "" });
+        }}
+        onChange={(value) => {
+          const next = { ...buyer, fullName: value };
+          onBuyer(next);
+          if (touched.fullName || submitted) onFieldErrors({ ...buyerErrors, fullName: validateBuyer(next).fullName ?? "" });
+        }}
+      />
+      <CheckoutField
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        inputMode="email"
+        value={buyer.email}
+        error={shown("email", buyerErrors.email)}
+        valid={(touched.email || submitted) && !validateBuyer(buyer).email}
+        onBlur={() => {
+          setTouched((current) => ({ ...current, email: true }));
+          onFieldErrors({ ...buyerErrors, email: validateBuyer(buyer).email ?? "" });
+        }}
+        onChange={(value) => {
+          const next = { ...buyer, email: value };
+          onBuyer(next);
+          if (touched.email || submitted) onFieldErrors({ ...buyerErrors, email: validateBuyer(next).email ?? "" });
+        }}
+      />
+      <CheckoutField
+        label="Mobile Number"
+        name="mobile"
+        type="tel"
+        autoComplete="tel"
+        inputMode="tel"
+        value={buyer.mobile}
+        error={shown("mobile", buyerErrors.mobile)}
+        valid={(touched.mobile || submitted) && !validateBuyer(buyer).mobile}
+        onBlur={() => {
+          setTouched((current) => ({ ...current, mobile: true }));
+          onFieldErrors({ ...buyerErrors, mobile: validateBuyer(buyer).mobile ?? "" });
+        }}
+        onChange={(value) => {
+          const next = { ...buyer, mobile: value };
+          onBuyer(next);
+          if (touched.mobile || submitted) onFieldErrors({ ...buyerErrors, mobile: validateBuyer(next).mobile ?? "" });
+        }}
+      />
+      <CheckoutField
+        label="Card Number"
+        name="cardNumber"
+        autoComplete="cc-number"
+        inputMode="numeric"
+        value={cardNumber}
+        error={shown("cardNumber", paymentErrors.cardNumber)}
+        valid={(touched.cardNumber || submitted) && !validatePayment({ cardNumber, expiry, cvv }).cardNumber}
+        onBlur={() => {
+          setTouched((current) => ({ ...current, cardNumber: true }));
+          setPaymentErrors((current) => ({ ...current, cardNumber: validatePayment({ cardNumber, expiry, cvv }).cardNumber ?? "" }));
+        }}
+        onChange={(value) => {
+          const digits = digitsOnly(value).slice(0, 16);
+          const formatted = digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+          setCardNumber(formatted);
+          if (touched.cardNumber || submitted) {
+            setPaymentErrors((current) => ({ ...current, cardNumber: validatePayment({ cardNumber: formatted, expiry, cvv }).cardNumber ?? "" }));
+          }
+        }}
+      />
+      <div className="purchase-pay-row">
+        <CheckoutField
+          label="Expiry"
+          name="expiry"
+          autoComplete="cc-exp"
           inputMode="numeric"
-          autoComplete="cc-number"
-          value={cardNumber}
-          aria-invalid={Boolean(paymentErrors.cardNumber)}
-          onChange={(event) => {
-            const digits = digitsOnly(event.target.value).slice(0, 16);
-            setCardNumber(digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim());
+          placeholder="MM/YY"
+          value={expiry}
+          error={shown("expiry", paymentErrors.expiry)}
+          valid={(touched.expiry || submitted) && !validatePayment({ cardNumber, expiry, cvv }).expiry}
+          onBlur={() => {
+            setTouched((current) => ({ ...current, expiry: true }));
+            setPaymentErrors((current) => ({ ...current, expiry: validatePayment({ cardNumber, expiry, cvv }).expiry ?? "" }));
+          }}
+          onChange={(value) => {
+            const digits = digitsOnly(value).slice(0, 4);
+            const formatted = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+            setExpiry(formatted);
+            if (touched.expiry || submitted) {
+              setPaymentErrors((current) => ({ ...current, expiry: validatePayment({ cardNumber, expiry: formatted, cvv }).expiry ?? "" }));
+            }
           }}
         />
-      </label>
-      {paymentErrors.cardNumber ? <p className="purchase-warn">{paymentErrors.cardNumber}</p> : null}
-      <div className="purchase-pay-row">
-        <label>
-          Expiry
-          <input
-            name="expiry"
-            inputMode="numeric"
-            autoComplete="cc-exp"
-            placeholder="MM/YY"
-            value={expiry}
-            aria-invalid={Boolean(paymentErrors.expiry)}
-            onChange={(event) => {
-              const digits = digitsOnly(event.target.value).slice(0, 4);
-              setExpiry(digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits);
-            }}
-          />
-        </label>
-        <label>
-          CVV
-          <input
-            name="cvv"
-            inputMode="numeric"
-            autoComplete="cc-csc"
-            value={cvv}
-            aria-invalid={Boolean(paymentErrors.cvv)}
-            onChange={(event) => setCvv(digitsOnly(event.target.value).slice(0, 3))}
-          />
-        </label>
+        <CheckoutField
+          label="CVV"
+          name="cvv"
+          autoComplete="cc-csc"
+          inputMode="numeric"
+          value={cvv}
+          error={shown("cvv", paymentErrors.cvv)}
+          valid={(touched.cvv || submitted) && !validatePayment({ cardNumber, expiry, cvv }).cvv}
+          onBlur={() => {
+            setTouched((current) => ({ ...current, cvv: true }));
+            setPaymentErrors((current) => ({ ...current, cvv: validatePayment({ cardNumber, expiry, cvv }).cvv ?? "" }));
+          }}
+          onChange={(value) => {
+            const next = digitsOnly(value).slice(0, 3);
+            setCvv(next);
+            if (touched.cvv || submitted) {
+              setPaymentErrors((current) => ({ ...current, cvv: validatePayment({ cardNumber, expiry, cvv: next }).cvv ?? "" }));
+            }
+          }}
+        />
       </div>
-      {paymentErrors.expiry ? <p className="purchase-warn">{paymentErrors.expiry}</p> : null}
-      {paymentErrors.cvv ? <p className="purchase-warn">{paymentErrors.cvv}</p> : null}
-      {formError ? <p className="purchase-warn">{formError}</p> : null}
-      <button type="submit" className="purchase-next" disabled={submitting}>
-        {submitting ? "Sending order…" : "Pay & Complete Order"}
+      {formError ? (
+        <p className="purchase-warn" role="alert">
+          {formError}
+        </p>
+      ) : null}
+      <button type="submit" className="purchase-next" disabled={submitting} aria-busy={submitting}>
+        {submitting ? "Processing booking..." : "Pay & Complete Order"}
       </button>
     </form>
   );
 }
 
+function CheckoutField({
+  label,
+  name,
+  type = "text",
+  value,
+  error,
+  valid,
+  onChange,
+  onBlur,
+  autoComplete,
+  inputMode,
+  placeholder,
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  value: string;
+  error?: string;
+  valid: boolean;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+  autoComplete: string;
+  inputMode?: "email" | "tel" | "numeric";
+  placeholder?: string;
+}) {
+  return (
+    <label className={`purchase-field${error ? " is-invalid" : valid ? " is-valid" : ""}`}>
+      {label}
+      <span className="auth-control">
+        <input
+          type={type}
+          name={name}
+          autoComplete={autoComplete}
+          inputMode={inputMode}
+          placeholder={placeholder}
+          value={value}
+          className={error ? undefined : valid ? "is-valid" : undefined}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${name}-error` : undefined}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
+        />
+        <FieldStatus state={error ? "invalid" : valid ? "valid" : "idle"} />
+      </span>
+      {error ? (
+        <p id={`${name}-error`} className="field-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </label>
+  );
+}
+
+function profileErrors(fullName: string, mobileNumber: string, dateOfBirth: string) {
+  const next: Record<string, string> = {};
+  if (fullName.trim().length < 3) next.fullName = "Full name must be at least 3 characters.";
+  const mobile = mobileNumber.replace(/[\s()-]/g, "");
+  if (!/^5\d{8}$/.test(mobile)) next.mobileNumber = "Enter a 9-digit mobile number starting with 5.";
+  if (!dateOfBirth) next.dateOfBirth = "Date of birth is required.";
+  return next;
+}
+
 function ProfileForm() {
   const { account, saveProfile } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusInvalid = useRef(false);
+  const savingRef = useRef(false);
   const [fullName, setFullName] = useState(account?.fullName ?? "");
   const [mobileNumber, setMobileNumber] = useState(account?.mobileNumber ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(account?.dateOfBirth ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!focusInvalid.current) return;
+    focusInvalid.current = false;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  });
+
+  function shown(name: string) {
+    return touched[name] || submitted ? errors[name] || "" : "";
+  }
+
+  function reveal(name: string, value: { fullName: string; mobileNumber: string; dateOfBirth: string }) {
+    setTouched((current) => ({ ...current, [name]: true }));
+    setErrors((current) => ({ ...current, [name]: profileErrors(value.fullName, value.mobileNumber, value.dateOfBirth)[name] ?? "" }));
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (saving) return;
-    const next: Record<string, string> = {};
-    if (fullName.trim().length < 3) next.fullName = "Full name must be at least 3 characters.";
-    const mobile = mobileNumber.replace(/[\s()-]/g, "");
-    if (!/^5\d{8}$/.test(mobile)) next.mobileNumber = "Enter a 9-digit mobile number starting with 5.";
-    if (!dateOfBirth) next.dateOfBirth = "Date of birth is required.";
+    if (savingRef.current) return;
+    const next = profileErrors(fullName, mobileNumber, dateOfBirth);
+    setSubmitted(true);
     setErrors(next);
     setFormError(null);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      focusInvalid.current = true;
+      return;
+    }
+    savingRef.current = true;
     setSaving(true);
     try {
       await saveProfile({ fullName, mobileNumber, dateOfBirth });
     } catch (error) {
-      if (error instanceof AuthApiError) {
+      if (error instanceof AuthApiError && Object.keys(error.fieldErrors).length > 0) {
         setErrors(error.fieldErrors);
-        if (Object.keys(error.fieldErrors).length === 0) setFormError(error.message);
+        focusInvalid.current = true;
+      } else if (error instanceof AuthApiError && error.status === 401) {
+        setFormError("Your session expired. Sign in again, then save your profile.");
       } else {
-        setFormError(error instanceof Error ? error.message : "The profile could not be saved.");
+        setFormError(userMessage(error, "The profile could not be saved."));
       }
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
+  const values = { fullName, mobileNumber, dateOfBirth };
+  const mobileError = shown("mobileNumber") || ((touched.mobileNumber || submitted) ? errors.mobile || "" : "");
+
   return (
-    <form className="purchase-checkout" onSubmit={(event) => void onSubmit(event)} noValidate>
+    <form ref={formRef} className="purchase-checkout" onSubmit={(event) => void onSubmit(event)} noValidate>
       <p className="purchase-block">Complete your profile before buying tickets.</p>
-      <label>
-        Full name
-        <input name="fullName" autoComplete="name" value={fullName} aria-invalid={Boolean(errors.fullName)} onChange={(event) => setFullName(event.target.value)} />
-      </label>
-      {errors.fullName ? <p className="purchase-warn">{errors.fullName}</p> : null}
-      <label>
-        Mobile number
-        <input name="mobileNumber" autoComplete="tel" inputMode="tel" value={mobileNumber} aria-invalid={Boolean(errors.mobileNumber || errors.mobile)} onChange={(event) => setMobileNumber(event.target.value)} />
-      </label>
-      {errors.mobileNumber || errors.mobile ? <p className="purchase-warn">{errors.mobileNumber || errors.mobile}</p> : null}
-      <label>
-        Date of birth
-        <input type="date" name="dateOfBirth" autoComplete="bday" value={dateOfBirth} aria-invalid={Boolean(errors.dateOfBirth)} onChange={(event) => setDateOfBirth(event.target.value)} />
-      </label>
-      {errors.dateOfBirth ? <p className="purchase-warn">{errors.dateOfBirth}</p> : null}
-      {formError ? <p className="purchase-warn">{formError}</p> : null}
-      <button type="submit" className="purchase-next" disabled={saving}>
-        {saving ? "Saving…" : "Save profile"}
+      <CheckoutField
+        label="Full name"
+        name="fullName"
+        autoComplete="name"
+        value={fullName}
+        error={shown("fullName")}
+        valid={(touched.fullName || submitted) && !profileErrors(fullName, mobileNumber, dateOfBirth).fullName}
+        onBlur={() => reveal("fullName", values)}
+        onChange={(value) => {
+          setFullName(value);
+          if (touched.fullName || submitted) reveal("fullName", { ...values, fullName: value });
+        }}
+      />
+      <CheckoutField
+        label="Mobile number"
+        name="mobileNumber"
+        type="tel"
+        autoComplete="tel"
+        inputMode="tel"
+        value={mobileNumber}
+        error={mobileError}
+        valid={(touched.mobileNumber || submitted) && !profileErrors(fullName, mobileNumber, dateOfBirth).mobileNumber && !errors.mobile}
+        onBlur={() => reveal("mobileNumber", values)}
+        onChange={(value) => {
+          setMobileNumber(value);
+          if (touched.mobileNumber || submitted) reveal("mobileNumber", { ...values, mobileNumber: value });
+        }}
+      />
+      <CheckoutField
+        label="Date of birth"
+        name="dateOfBirth"
+        type="date"
+        autoComplete="bday"
+        value={dateOfBirth}
+        error={shown("dateOfBirth")}
+        valid={(touched.dateOfBirth || submitted) && !profileErrors(fullName, mobileNumber, dateOfBirth).dateOfBirth}
+        onBlur={() => reveal("dateOfBirth", values)}
+        onChange={(value) => {
+          setDateOfBirth(value);
+          if (touched.dateOfBirth || submitted) reveal("dateOfBirth", { ...values, dateOfBirth: value });
+        }}
+      />
+      {formError ? (
+        <p className="purchase-warn" role="alert">
+          {formError}
+        </p>
+      ) : null}
+      <button type="submit" className="purchase-next" disabled={saving} aria-busy={saving}>
+        {saving ? "Saving profile..." : "Save profile"}
       </button>
     </form>
   );

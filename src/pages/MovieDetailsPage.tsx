@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import AgeBadge from "../components/AgeBadge";
+import EmptyState from "../components/EmptyState";
+import { ClockIcon } from "../components/Icons";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Poster from "../components/Poster";
@@ -30,8 +32,9 @@ export default function MovieDetailsPage() {
   const [filmFailure, setFilmFailure] = useState<{ id: string; attempt: number; kind: "missing" | "error" } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [pickedDate, setPickedDate] = useState<string | null>(null);
-  const [sessionResult, setSessionResult] = useState<{ key: string; halls: HallSessionGroup[] } | null>(null);
-  const [sessionFailure, setSessionFailure] = useState<string | null>(null);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const [sessionResult, setSessionResult] = useState<{ key: string; attempt: number; halls: HallSessionGroup[] } | null>(null);
+  const [sessionFailure, setSessionFailure] = useState<{ key: string; attempt: number } | null>(null);
   const today = useState(() => formatISODate(startOfDay(new Date())))[0];
   const film = loadedFilm?.id === movieId ? loadedFilm.film : null;
   const status = film ? "ready" : filmFailure?.id === movieId && filmFailure.attempt === attempt ? filmFailure.kind : "loading";
@@ -64,30 +67,31 @@ export default function MovieDetailsPage() {
   const dates = film?.availableDates ?? [];
   const selectedDate = pickedDate && dates.includes(pickedDate) ? pickedDate : dates.includes(today) ? today : (dates[0] ?? "");
   const sessionKey = film && selectedDate ? `${film.id}:${selectedDate}` : "";
-  const halls = sessionResult?.key === sessionKey ? sessionResult.halls : [];
+  const halls = sessionResult?.key === sessionKey && sessionResult.attempt === sessionAttempt ? sessionResult.halls : [];
   const sessionsStatus: "loading" | "ready" | "error" = !sessionKey
     ? "ready"
-    : sessionFailure === sessionKey
+    : sessionFailure?.key === sessionKey && sessionFailure.attempt === sessionAttempt
       ? "error"
-      : sessionResult?.key === sessionKey
+      : sessionResult?.key === sessionKey && sessionResult.attempt === sessionAttempt
         ? "ready"
         : "loading";
 
   useEffect(() => {
     if (!film || !selectedDate) return;
     const key = `${film.id}:${selectedDate}`;
+    const attempt = sessionAttempt;
     let cancelled = false;
     loadFilmSessions(film.id, selectedDate)
       .then((next) => {
-        if (!cancelled) setSessionResult({ key, halls: next });
+        if (!cancelled) setSessionResult({ key, attempt, halls: next });
       })
       .catch(() => {
-        if (!cancelled) setSessionFailure(key);
+        if (!cancelled) setSessionFailure({ key, attempt });
       });
     return () => {
       cancelled = true;
     };
-  }, [film, selectedDate]);
+  }, [film, selectedDate, sessionAttempt]);
 
   useEffect(() => {
     const previous = document.title;
@@ -101,7 +105,7 @@ export default function MovieDetailsPage() {
     <div className="page sessions-page movie-page">
       <Header variant="solid" />
       <main className="sessions-main movie-main">
-        {status === "loading" && <p className="results-count">Loading movie…</p>}
+        {status === "loading" && <MovieLoading />}
         {status === "error" && (
           <div className="empty-sessions">
             <h1>Movie unavailable</h1>
@@ -129,6 +133,7 @@ export default function MovieDetailsPage() {
             onSelectDate={setPickedDate}
             halls={halls}
             sessionsStatus={sessionsStatus}
+            onRetrySessions={() => setSessionAttempt((value) => value + 1)}
             restriction={purchaseRestriction(film.ageRating, user?.dateOfBirth ?? null)}
           />
         )}
@@ -146,6 +151,7 @@ function MovieDetails({
   onSelectDate,
   halls,
   sessionsStatus,
+  onRetrySessions,
   restriction,
 }: {
   film: FilmDetail;
@@ -155,13 +161,14 @@ function MovieDetails({
   onSelectDate: (date: string) => void;
   halls: HallSessionGroup[];
   sessionsStatus: "loading" | "ready" | "error";
+  onRetrySessions: () => void;
   restriction: string | null;
 }) {
   const venues = groupByVenue(halls);
   const backdrop = film.backdropUrl
     ? [
-        "linear-gradient(90deg, rgba(7,12,28,0.92) 0%, rgba(7,12,28,0.62) 48%, rgba(7,12,28,0.35) 100%)",
-        "linear-gradient(180deg, rgba(7,12,28,0.08) 20%, rgba(7,12,28,0.72) 100%)",
+        "linear-gradient(90deg, rgba(7,11,25,0.86) 0%, rgba(7,11,25,0.42) 40%, rgba(7,11,25,0.08) 68%, rgba(7,11,25,0.3) 100%)",
+        "linear-gradient(180deg, rgba(7,11,25,0.62) 0%, rgba(7,11,25,0.08) 24%, rgba(7,11,25,0) 46%, rgba(7,11,25,0.28) 76%, #070b19 100%)",
         `url("${film.backdropUrl}")`,
       ].join(", ")
     : undefined;
@@ -181,11 +188,15 @@ function MovieDetails({
         <div className="movie-hero-inner">
           <Poster title={film.title} theme={film.poster} imageSrc={film.posterUrl ?? undefined} />
           <div className="movie-hero-copy">
+            <p className="movie-kicker">{film.isComingSoon ? "Coming soon" : "Now playing"}</p>
             <h1>{film.title}</h1>
             <p className="movie-description">{film.synopsis}</p>
             <div className="movie-hero-meta">
               <AgeBadge rating={film.ageRating} tone={ratingTone(film.ageRating)} />
-              <span className="movie-chip">{film.duration}</span>
+              <span className="movie-chip movie-chip--time">
+                <ClockIcon />
+                {film.duration}
+              </span>
               {film.formats.map((format) => (
                 <span key={format} className="movie-chip">
                   {format}
@@ -205,9 +216,39 @@ function MovieDetails({
               {restriction}
             </p>
           )}
-          {sessionsStatus === "loading" ? <p className="movie-empty">Loading sessions…</p> : null}
-          {sessionsStatus === "error" ? <p className="movie-empty">The showtimes could not be loaded.</p> : null}
-          {sessionsStatus === "ready" && venues.length === 0 ? <p className="movie-empty">No sessions available for this date.</p> : null}
+          {sessionsStatus === "loading" ? <SessionSkeletons /> : null}
+          {sessionsStatus === "error" ? (
+            <EmptyState
+              title="Showtimes could not be loaded"
+              message="Something went wrong while loading this date. Your selected date is still here."
+              action={
+                <button type="button" className="clear-filters" onClick={onRetrySessions}>
+                  Retry
+                </button>
+              }
+            />
+          ) : null}
+          {sessionsStatus === "ready" && venues.length === 0 ? (
+            <EmptyState
+              title="No sessions available for this date."
+              message="Try another date."
+              action={
+                dates.length > 1 ? (
+                  <button
+                    type="button"
+                    className="clear-filters"
+                    onClick={() => {
+                      const index = dates.indexOf(selectedDate);
+                      const next = dates[(index + 1) % dates.length];
+                      if (next) onSelectDate(next);
+                    }}
+                  >
+                    Show another date
+                  </button>
+                ) : null
+              }
+            />
+          ) : null}
           {sessionsStatus === "ready" && venues.length > 0 ? (
             <div className="venue-groups">
               {venues.map((venue) => (
@@ -216,10 +257,10 @@ function MovieDetails({
                   <div className="venue-halls">
                     {venue.halls.map((hall) => (
                       <div key={hall.hall} className="hall-group">
-                        <h4>{hall.hall}</h4>
+                        <h4>{hallLabel(hall.hall)}</h4>
                         <div className="session-list">
                           {hall.sessions.map((session) => (
-                            <SessionItem key={session.id} session={session} unavailable={Boolean(restriction)} />
+                            <SessionItem key={session.id} session={session} layout="movie" unavailable={Boolean(restriction)} />
                           ))}
                         </div>
                       </div>
@@ -269,6 +310,51 @@ function MovieDetails({
       </div>
     </>
   );
+}
+
+function MovieLoading() {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      <p className="sr-only">Loading movie</p>
+      <div className="skeleton movie-skel-hero" />
+      <div className="movie-layout">
+        <SessionSkeletons dates />
+        <div className="skeleton movie-skel-details" />
+      </div>
+    </div>
+  );
+}
+
+function SessionSkeletons({ dates = false }: { dates?: boolean }) {
+  return (
+    <div className="venue-groups" aria-busy="true" aria-live="polite">
+      <p className="sr-only">Loading sessions</p>
+      {dates ? (
+        <div className="movie-skel-dates" aria-hidden="true">
+          <div className="skeleton movie-skel-date" />
+          <div className="skeleton movie-skel-date" />
+          <div className="skeleton movie-skel-date" />
+          <div className="skeleton movie-skel-date" />
+        </div>
+      ) : null}
+      <section className="venue-group">
+        <div className="skeleton movie-skel-venue" />
+        <div className="venue-halls">
+          <div className="hall-group">
+            <div className="skeleton movie-skel-title" />
+            <div className="session-list">
+              <div className="skeleton movie-skel-ticket" />
+              <div className="skeleton movie-skel-ticket" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function hallLabel(name: string) {
+  return /^hall\b/i.test(name) ? name : `Hall ${name}`;
 }
 
 function groupByVenue(halls: HallSessionGroup[]): { venueName: string; halls: HallSessionGroup[] }[] {

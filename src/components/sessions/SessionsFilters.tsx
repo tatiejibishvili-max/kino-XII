@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import type { FormatId, LanguageId, SessionCatalog, SessionsFilters as Filters, TimeOfDayId } from "../../types/session";
 import DateFilter from "./DateFilter";
 import FilterFooter from "./FilterFooter";
@@ -13,6 +14,7 @@ interface SessionsFiltersProps {
   activeCount: number;
   canClear: boolean;
   open: boolean;
+  dialogRef: RefObject<HTMLElement | null>;
   onClose: () => void;
   onToggleVenue: (id: string) => void;
   onToggleFormat: (id: FormatId) => void;
@@ -29,6 +31,7 @@ export default function SessionsFilters({
   activeCount,
   canClear,
   open,
+  dialogRef,
   onClose,
   onToggleVenue,
   onToggleFormat,
@@ -38,7 +41,16 @@ export default function SessionsFilters({
   onClear,
 }: SessionsFiltersProps) {
   return (
-    <aside className={open ? "sessions-filters is-open" : "sessions-filters"} aria-label="Session filters">
+    <aside
+      ref={dialogRef}
+      className={open ? "sessions-filters is-open" : "sessions-filters"}
+      aria-label="Session filters"
+      role={open ? "dialog" : undefined}
+      aria-modal={open ? true : undefined}
+      onMouseDown={(event) => {
+        if (open && event.target === event.currentTarget) onClose();
+      }}
+    >
       <div className="filters-card">
         <div className="filters-heading">
           <h2>Filters</h2>

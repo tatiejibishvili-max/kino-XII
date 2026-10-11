@@ -673,7 +673,9 @@ button.session-card {
     display: block;
     overflow: auto;
     padding: 16px;
-    background: var(--bg);
+    background: rgba(7, 12, 28, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .filters-close,

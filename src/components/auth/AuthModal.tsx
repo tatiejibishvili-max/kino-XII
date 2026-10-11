@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "../../auth/useAuth";
+import FieldStatus from "../form/FieldStatus";
+import { useDialog } from "../../lib/useDialog";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -27,22 +29,12 @@ function avatarError(file: File) {
 export default function AuthModal() {
   const { modal, closeModal, openLogin, openRegister, notice, dismissNotice } = useAuth();
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useDialog<HTMLDivElement>(Boolean(modal), closeModal);
 
   useEffect(() => {
     if (!modal) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeModal();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    dialogRef.current?.querySelector<HTMLElement>(".auth-form input:not([type='file'])")?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [closeModal, modal]);
+    dialogRef.current?.querySelector<HTMLElement>("input:not([type='file'])")?.focus();
+  }, [dialogRef, modal]);
 
   return (
     <>
@@ -86,57 +78,81 @@ export default function AuthModal() {
 
 function LoginForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => void }) {
   const { login, submitting, formError, fieldErrors } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusInvalid = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
-  const errors = { ...localErrors, ...fieldErrors };
+  const errors = { ...fieldErrors, ...localErrors };
+  const emailMessage = emailError(email);
+  const passwordMessage = passwordError(password);
+
+  useEffect(() => {
+    if (!focusInvalid.current) return;
+    focusInvalid.current = false;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  });
+
+  function reveal(field: string, message: string) {
+    setTouched((current) => ({ ...current, [field]: true }));
+    setLocalErrors((current) => ({ ...current, [field]: message }));
+  }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const next = {
-      email: emailError(email),
-      password: passwordError(password),
-    };
-    const visible = Object.fromEntries(Object.entries(next).filter(([, message]) => message));
-    setLocalErrors(visible);
-    if (Object.keys(visible).length > 0) return;
+    if (submitting) return;
+    const next = { email: emailMessage, password: passwordMessage };
+    setSubmitted(true);
+    setTouched({ email: true, password: true });
+    if (next.email || next.password) {
+      setLocalErrors(next);
+      focusInvalid.current = true;
+      return;
+    }
+    setLocalErrors({});
     void login(email.trim(), password);
   }
 
   return (
-    <form className="auth-form" onSubmit={onSubmit} noValidate>
+    <form ref={formRef} className="auth-form" onSubmit={onSubmit} noValidate>
       <h2 id={titleId}>Log In</h2>
       <p className="auth-lead">Use the email and password for your KINO XII account.</p>
       {formError ? <p className="auth-banner">{formError}</p> : null}
-      <label>
-        Email
-        <input
-          type="email"
-          name="email"
-          autoComplete="email"
-          value={email}
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? "login-email-error" : undefined}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-      </label>
-      {errors.email ? <p id="login-email-error" className="auth-error">{errors.email}</p> : null}
-      <label>
-        Password
-        <input
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          value={password}
-          aria-invalid={Boolean(errors.password)}
-          aria-describedby={errors.password ? "login-password-error" : undefined}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-      </label>
-      {errors.password ? <p id="login-password-error" className="auth-error">{errors.password}</p> : null}
-      <button type="submit" className="auth-submit" disabled={submitting}>
-        {submitting ? "Logging in…" : "Log In"}
+      <LoginField
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        value={email}
+        error={touched.email || submitted ? errors.email : ""}
+        valid={(touched.email || submitted) && !emailMessage && !errors.email}
+        errorId="login-email-error"
+        onChange={(value) => {
+          setEmail(value);
+          if (touched.email || submitted) setLocalErrors((current) => ({ ...current, email: emailError(value) }));
+        }}
+        onBlur={() => reveal("email", emailMessage)}
+      />
+      <LoginField
+        label="Password"
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        value={password}
+        error={touched.password || submitted ? errors.password : ""}
+        valid={(touched.password || submitted) && !passwordMessage && !errors.password}
+        errorId="login-password-error"
+        onChange={(value) => {
+          setPassword(value);
+          if (touched.password || submitted) setLocalErrors((current) => ({ ...current, password: passwordError(value) }));
+        }}
+        onBlur={() => reveal("password", passwordMessage)}
+      />
+      <button type="submit" className="auth-submit" disabled={submitting} aria-busy={submitting}>
+        {submitting ? "Signing in..." : "Log In"}
       </button>
       <p className="auth-switch">
         Don't have an account?{" "}
@@ -148,18 +164,92 @@ function LoginForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => voi
   );
 }
 
+function LoginField({
+  label,
+  name,
+  type = "text",
+  autoComplete,
+  value,
+  error,
+  valid,
+  errorId,
+  onChange,
+  onBlur,
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  autoComplete: string;
+  value: string;
+  error?: string;
+  valid: boolean;
+  errorId: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+}) {
+  const state = error ? "is-invalid" : valid ? "is-valid" : "";
+  return (
+    <div className={`auth-field ${state}`.trim()}>
+      <label>
+        {label}
+        <span className="auth-control">
+          <input
+            type={type}
+            name={name}
+            autoComplete={autoComplete}
+            value={value}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? errorId : undefined}
+            onChange={(event) => onChange(event.target.value)}
+            onBlur={onBlur}
+          />
+          <FieldStatus state={error ? "invalid" : valid ? "valid" : "idle"} />
+        </span>
+      </label>
+      {error ? (
+        <p id={errorId} className="auth-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function usernameError(value: string) {
+  if (!value.trim()) return "Username is required.";
+  if (value.trim().length < 3) return "Username must be at least 3 characters.";
+  return "";
+}
+
+function confirmError(password: string, confirm: string) {
+  if (!confirm) return "Confirm your password.";
+  if (confirm !== password) return "Passwords do not match.";
+  return "";
+}
+
 function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => void }) {
   const { register, submitting, formError, fieldErrors } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusInvalid = useRef(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [avatar, setAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const previewRef = useRef<string | null>(null);
 
-  const errors = { ...localErrors, ...fieldErrors };
+  const errors = { ...fieldErrors, ...localErrors };
+  const shown = (field: string) => Boolean((touched[field] || submitted) && errors[field]);
+
+  useEffect(() => {
+    if (!focusInvalid.current) return;
+    focusInvalid.current = false;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  });
 
   useEffect(() => {
     return () => {
@@ -190,23 +280,29 @@ function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => 
     setLocalErrors((current) => ({ ...current, avatar: "" }));
   }
 
+  function reveal(field: string, message: string) {
+    setTouched((current) => ({ ...current, [field]: true }));
+    setLocalErrors((current) => ({ ...current, [field]: message }));
+  }
+
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const next: Record<string, string> = {};
-    if (!username.trim()) next.username = "Username is required.";
-    else if (username.trim().length < 3) next.username = "Username must be at least 3 characters.";
-    const emailMessage = emailError(email);
-    if (emailMessage) next.email = emailMessage;
-    const passwordMessage = passwordError(password);
-    if (passwordMessage) next.password = passwordMessage;
-    if (!confirmPassword) next.confirmPassword = "Confirm your password.";
-    else if (confirmPassword !== password) next.confirmPassword = "Passwords do not match.";
-    if (avatar) {
-      const avatarMessage = avatarError(avatar);
-      if (avatarMessage) next.avatar = avatarMessage;
+    if (submitting) return;
+    const next: Record<string, string> = {
+      username: usernameError(username),
+      email: emailError(email),
+      password: passwordError(password),
+      confirmPassword: confirmError(password, confirmPassword),
+    };
+    if (avatar) next.avatar = avatarError(avatar);
+    setSubmitted(true);
+    setTouched({ username: true, email: true, password: true, confirmPassword: true, avatar: true });
+    const invalid = Object.values(next).some(Boolean);
+    setLocalErrors(invalid ? next : {});
+    if (invalid) {
+      focusInvalid.current = true;
+      return;
     }
-    setLocalErrors(next);
-    if (Object.keys(next).filter((key) => next[key]).length > 0) return;
     void register({
       username: username.trim(),
       email: email.trim(),
@@ -215,13 +311,13 @@ function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => 
     });
   }
 
-  const usernameReady = username.trim().length >= 3 && !errors.username;
-  const emailReady = emailError(email) === "" && !errors.email;
-  const passwordReady = passwordError(password) === "" && !errors.password;
-  const confirmReady = confirmPassword.length > 0 && confirmPassword === password && passwordReady && !errors.confirmPassword;
+  const usernameReady = (touched.username || submitted) && !usernameError(username) && !errors.username;
+  const emailReady = (touched.email || submitted) && emailError(email) === "" && !errors.email;
+  const passwordReady = (touched.password || submitted) && passwordError(password) === "" && !errors.password;
+  const confirmReady = (touched.confirmPassword || submitted) && confirmError(password, confirmPassword) === "" && !errors.confirmPassword;
 
   return (
-    <form className="auth-form auth-form--register" onSubmit={onSubmit} noValidate>
+    <form ref={formRef} className="auth-form auth-form--register" onSubmit={onSubmit} noValidate>
       <h2 id={titleId}>Sign up</h2>
       <p className="auth-lead">Welcome to Kino XII</p>
       {formError ? <p className="auth-banner">{formError}</p> : null}
@@ -258,17 +354,25 @@ function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => 
           </button>
         ) : null}
       </div>
-      {errors.avatar ? <p id="register-avatar-error" className="auth-error">{errors.avatar}</p> : null}
+      {errors.avatar ? (
+        <p id="register-avatar-error" className="auth-error" role="alert">
+          {errors.avatar}
+        </p>
+      ) : null}
       <RegisterField
         label="Username"
         name="username"
         autoComplete="username"
         placeholder="User"
         value={username}
-        error={errors.username}
+        error={shown("username") ? errors.username : ""}
         errorId="register-username-error"
         ready={usernameReady}
-        onChange={setUsername}
+        onBlur={() => reveal("username", usernameError(username))}
+        onChange={(value) => {
+          setUsername(value);
+          if (touched.username || submitted) setLocalErrors((current) => ({ ...current, username: usernameError(value) }));
+        }}
       />
       <RegisterField
         label="Email"
@@ -277,10 +381,14 @@ function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => 
         autoComplete="email"
         placeholder="example@gmail.com"
         value={email}
-        error={errors.email}
+        error={shown("email") ? errors.email : ""}
         errorId="register-email-error"
         ready={emailReady}
-        onChange={setEmail}
+        onBlur={() => reveal("email", emailError(email))}
+        onChange={(value) => {
+          setEmail(value);
+          if (touched.email || submitted) setLocalErrors((current) => ({ ...current, email: emailError(value) }));
+        }}
       />
       <div className="auth-split">
         <RegisterField
@@ -289,10 +397,19 @@ function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => 
           type="password"
           autoComplete="new-password"
           value={password}
-          error={errors.password}
+          error={shown("password") ? errors.password : ""}
           errorId="register-password-error"
           ready={passwordReady}
-          onChange={setPassword}
+          onBlur={() => reveal("password", passwordError(password))}
+        onChange={(value) => {
+          setPassword(value);
+          setLocalErrors((current) => {
+            const next = { ...current };
+            if (touched.password || submitted) next.password = passwordError(value);
+            if (touched.confirmPassword || submitted) next.confirmPassword = confirmError(value, confirmPassword);
+            return next;
+          });
+        }}
         />
         <RegisterField
           label="Confirm password"
@@ -300,14 +417,18 @@ function RegisterForm({ titleId, onSwitch }: { titleId: string; onSwitch: () => 
           type="password"
           autoComplete="new-password"
           value={confirmPassword}
-          error={errors.confirmPassword}
+          error={shown("confirmPassword") ? errors.confirmPassword : ""}
           errorId="register-confirm-error"
           ready={confirmReady}
-          onChange={setConfirmPassword}
+          onBlur={() => reveal("confirmPassword", confirmError(password, confirmPassword))}
+          onChange={(value) => {
+            setConfirmPassword(value);
+            if (touched.confirmPassword || submitted) setLocalErrors((current) => ({ ...current, confirmPassword: confirmError(password, value) }));
+          }}
         />
       </div>
-      <button type="submit" className="auth-submit" disabled={submitting}>
-        {submitting ? "Signing up…" : "Sign up"}
+      <button type="submit" className="auth-submit" disabled={submitting} aria-busy={submitting}>
+        {submitting ? "Creating account..." : "Sign up"}
       </button>
       <p className="auth-switch">
         Already have an account?{" "}
@@ -330,6 +451,7 @@ function RegisterField({
   errorId,
   ready,
   onChange,
+  onBlur,
 }: {
   label: string;
   name: string;
@@ -341,6 +463,7 @@ function RegisterField({
   errorId: string;
   ready: boolean;
   onChange: (value: string) => void;
+  onBlur: () => void;
 }) {
   const state = error ? "is-invalid" : ready ? "is-valid" : "";
   return (
@@ -357,38 +480,17 @@ function RegisterField({
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
             onChange={(event) => onChange(event.target.value)}
+            onBlur={onBlur}
           />
           <FieldStatus state={error ? "invalid" : ready ? "valid" : "idle"} />
         </span>
       </label>
       {error ? (
-        <p id={errorId} className="auth-error">
+        <p id={errorId} className="auth-error" role="alert">
           {error}
         </p>
       ) : null}
     </div>
-  );
-}
-
-function FieldStatus({ state }: { state: "valid" | "invalid" | "idle" }) {
-  if (state === "idle") return null;
-  if (state === "valid") {
-    return (
-      <span className="auth-status auth-status--valid" aria-hidden="true">
-        <svg width="12" height="12" viewBox="0 0 12 12">
-          <path d="M2.2 6.1 L4.7 8.5 L9.8 3.3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-    );
-  }
-  return (
-    <span className="auth-status auth-status--invalid" aria-hidden="true">
-      <svg width="12" height="12" viewBox="0 0 12 12">
-        <circle cx="6" cy="6" r="5" fill="none" stroke="currentColor" strokeWidth="1.2" />
-        <path d="M6 3.4 V6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        <circle cx="6" cy="8.4" r="0.7" fill="currentColor" />
-      </svg>
-    </span>
   );
 }
 

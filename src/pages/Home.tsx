@@ -14,8 +14,8 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection slides={films?.featured ?? []} status={catalogue.status} onRetry={catalogue.retry} />
-        <NowPlayingSection movies={films?.nowPlaying ?? []} status={catalogue.status} />
-        <ComingSoonSection movies={films?.comingSoon ?? []} status={catalogue.status} />
+        <NowPlayingSection movies={films?.nowPlaying ?? []} status={catalogue.status} onRetry={catalogue.retry} />
+        <ComingSoonSection movies={films?.comingSoon ?? []} status={catalogue.status} onRetry={catalogue.retry} />
       </main>
       <Footer />
     </div>

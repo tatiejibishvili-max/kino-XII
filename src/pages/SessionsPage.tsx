@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDialog } from "../lib/useDialog";
 import EmptySessions from "../components/sessions/EmptySessions";
 import MovieSessionGroup from "../components/sessions/MovieSessionGroup";
 import SessionsFilters from "../components/sessions/SessionsFilters";
@@ -10,10 +11,34 @@ import Header from "../components/Header";
 import { useSessionCatalog } from "../hooks/useSessionCatalog";
 import { useSessionsFilters } from "../hooks/useSessionsFilters";
 
+function useNarrowFilters(onLeaveNarrow: () => void) {
+  const onLeaveRef = useRef(onLeaveNarrow);
+  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 800px)").matches);
+
+  useEffect(() => {
+    onLeaveRef.current = onLeaveNarrow;
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 800px)");
+    const onChange = () => {
+      setNarrow(media.matches);
+      if (!media.matches) onLeaveRef.current();
+    };
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return narrow;
+}
+
 export default function SessionsPage() {
   const catalogState = useSessionCatalog();
   const query = useSessionsFilters(catalogState.data);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
+  const narrowFilters = useNarrowFilters(closeFilters);
+  const filtersRef = useDialog<HTMLElement>(filtersOpen && narrowFilters, closeFilters);
   const filters = query.filters;
   const result = query.result;
 
@@ -24,23 +49,6 @@ export default function SessionsPage() {
       document.title = previous;
     };
   }, []);
-
-  useEffect(() => {
-    if (!filtersOpen) return;
-
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setFiltersOpen(false);
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [filtersOpen]);
 
   function changePage(page: number) {
     query.selectPage(page);
@@ -71,7 +79,8 @@ export default function SessionsPage() {
               activeCount={query.activeCount}
               canClear={canClear}
               open={filtersOpen}
-              onClose={() => setFiltersOpen(false)}
+              dialogRef={filtersRef}
+              onClose={closeFilters}
               onToggleVenue={query.toggleVenue}
               onToggleFormat={query.toggleFormat}
               onToggleLanguage={query.toggleLanguage}

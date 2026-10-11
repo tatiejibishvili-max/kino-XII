@@ -15,6 +15,7 @@ interface ApiFilm {
   releaseDate: string;
   fromPrice: number | null;
   synopsis?: string;
+  isComingSoon?: boolean;
   director?: string | null;
   cast?: string | null;
   availableDates?: string[];
@@ -39,6 +40,7 @@ export interface FilmDetail {
   formats: string[];
   fromPrice: number | null;
   availableDates: string[];
+  isComingSoon: boolean;
 }
 
 export interface HomeCatalogue {
@@ -69,7 +71,7 @@ interface MovieSessionGroupResponse {
     hall: { name: string };
     venue: { name: string };
     format: { name: string };
-    language: { name: string };
+    language: { name: string; code?: string };
   }[];
 }
 
@@ -121,6 +123,7 @@ function toDetail(film: ApiFilm): FilmDetail {
     formats: (film.formats ?? []).map((format) => format.name),
     fromPrice: film.fromPrice,
     availableDates: film.availableDates ?? [],
+    isComingSoon: Boolean(film.isComingSoon),
   };
 }
 
@@ -160,6 +163,7 @@ export async function loadFilmSessions(slug: string, date: string): Promise<Hall
         startTime: session.time,
         formatLabel: session.format.name,
         languageLabel: session.language.name,
+        languageCode: session.language.code,
         venueName: session.venue.name,
         hall: session.hall.name,
         price: session.price,

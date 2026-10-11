@@ -19,7 +19,6 @@ export default function TimeOfDayFilter({ selected, onToggle }: TimeOfDayFilterP
             onChange={() => onToggle(time.id)}
             label={time.label}
             hint={time.hint}
-            lang="ka"
           />
         ))}
       </div>

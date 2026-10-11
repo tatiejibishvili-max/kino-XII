@@ -4,11 +4,13 @@
  */
 import { ApiError, apiRequest, readToken, writeToken } from "./api";
 export class AuthApiError extends Error {
+  readonly status: number | null;
   readonly fieldErrors: Record<string, string>;
 
-  constructor(message: string, fieldErrors: Record<string, string> = {}) {
+  constructor(message: string, fieldErrors: Record<string, string> = {}, status: number | null = null) {
     super(message);
     this.name = "AuthApiError";
+    this.status = status;
     this.fieldErrors = fieldErrors;
   }
 }
@@ -60,7 +62,7 @@ function accountFromUser(user: ApiUser): AuthAccount {
 }
 
 function asAuthError(error: unknown): never {
-  if (error instanceof ApiError) throw new AuthApiError(error.message, error.fieldErrors);
+  if (error instanceof ApiError) throw new AuthApiError(error.message, error.fieldErrors, error.status);
   throw error;
 }
 

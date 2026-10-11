@@ -15,6 +15,7 @@ export interface AuthContextValue {
   formError: string | null;
   fieldErrors: Record<string, string>;
   notice: string | null;
+  pendingActionId: string | null;
   dismissNotice: () => void;
   openLogin: () => void;
   openRegister: () => void;

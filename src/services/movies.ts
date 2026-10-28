@@ -1,79 +1,10 @@
 import { parseISODate } from "../lib/sessions/dates";
 import { formatSessionPrice } from "../lib/sessions/query";
 import type { HallSessionGroup, SessionView } from "../types/session";
-import type { Movie, PosterTheme } from "../types/movie";
+import type { ApiFilm, ApiMovieSessionGroup, FeaturedFilm, FilmDetail, HomeCatalogue, Movie, PosterTheme } from "../types/movie";
 import { apiRequest } from "./api";
 
 const FALLBACK_POSTER: PosterTheme = { from: "#1a3d66", to: "#070c1c", accent: "#d7e4f2", spotlightX: 62 };
-
-interface ApiFilm {
-  slug: string;
-  title: string;
-  runtimeMinutes: number;
-  posterUrl: string | null;
-  backdropUrl: string | null;
-  releaseDate: string;
-  fromPrice: number | null;
-  synopsis?: string;
-  isComingSoon?: boolean;
-  director?: string | null;
-  cast?: string | null;
-  availableDates?: string[];
-  ageRating: { code: string; description?: string };
-  genres?: { name: string }[];
-  formats?: { name: string }[];
-}
-
-export interface FilmDetail {
-  id: string;
-  title: string;
-  synopsis: string;
-  ageRating: string;
-  ratingNote: string;
-  duration: string;
-  posterUrl: string | null;
-  backdropUrl: string | null;
-  poster: PosterTheme;
-  director: string;
-  cast: string;
-  releaseDate: string;
-  formats: string[];
-  fromPrice: number | null;
-  availableDates: string[];
-  isComingSoon: boolean;
-}
-
-export interface HomeCatalogue {
-  featured: FeaturedFilm[];
-  nowPlaying: Movie[];
-  comingSoon: Movie[];
-}
-
-export interface FeaturedFilm {
-  id: string;
-  title: string;
-  premiereLabel: string;
-  ageRating: string;
-  duration: string;
-  tags: string[];
-  description: string;
-  backdropUrl: string | null;
-}
-
-interface MovieSessionGroupResponse {
-  venue: { name: string };
-  sessions: {
-    id: number;
-    time: string;
-    price: number;
-    seatsLeft: number;
-    isSoldOut: boolean;
-    hall: { name: string };
-    venue: { name: string };
-    format: { name: string };
-    language: { name: string; code?: string };
-  }[];
-}
 
 function releaseLabel(iso: string) {
   return parseISODate(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -151,7 +82,7 @@ export async function loadFilm(slug: string): Promise<FilmDetail> {
 }
 
 export async function loadFilmSessions(slug: string, date: string): Promise<HallSessionGroup[]> {
-  const body = await apiRequest<{ data: MovieSessionGroupResponse[] }>(`/movies/${slug}/sessions?date=${date}`, { auth: false });
+  const body = await apiRequest<{ data: ApiMovieSessionGroup[] }>(`/movies/${slug}/sessions?date=${date}`, { auth: false });
   const groups: HallSessionGroup[] = [];
 
   for (const venueGroup of body.data) {

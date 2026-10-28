@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { FORMATS } from "../../data/sessionOptions";
 import { useAuth } from "../../auth/useAuth";
 import { AuthApiError } from "../../services/auth";
@@ -25,8 +26,10 @@ import { usePurchase } from "../../purchase/usePurchase";
 import FieldStatus from "../form/FieldStatus";
 import { useDialog } from "../../lib/useDialog";
 import { userMessage } from "../../lib/userMessage";
+import { rememberBooking } from "../../services/bookings";
 import { buyerFromAccount, fetchHallMap, holdSeats, PurchaseApiError, releaseHold, submitOrder } from "../../services/purchase";
-import { loadSessionSummary, type SessionSummary } from "../../services/sessions";
+import { loadSessionSummary } from "../../services/sessions";
+import type { SessionSummary } from "../../types/session";
 import type { BuyerDetails, ConfirmedOrder, HallMap, SeatHold, SelectedSeat, TicketType } from "../../types/purchase";
 
 const EXPIRED_MESSAGE = "Your hold time expired. Please re-select your seats.";
@@ -39,7 +42,8 @@ export default function PurchaseModal() {
 
 function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: () => void }) {
   const titleId = useId();
-  const { account } = useAuth();
+  const navigate = useNavigate();
+  const { account, openLogin, openRegister } = useAuth();
   const catalogState = useSessionCatalog();
   const catalog = catalogState.data;
   const [summary, setSummary] = useState<SessionSummary | null>(null);
@@ -63,9 +67,9 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
     };
   }, [catalog, sessionId]);
   const ageRating = movie?.ageRating ?? "";
-  const blockedProfile = profileBlock(account?.profileComplete ?? null);
+  const blockedProfile = account ? profileBlock(account.profileComplete) : null;
   const blockedAge = session ? purchaseAgeBlock(ageRating, account?.dateOfBirth ?? null) : null;
-  const canLoadMap = Boolean(session && account && !blockedProfile && !blockedAge);
+  const canLoadMap = Boolean(session && !blockedProfile && !blockedAge);
 
   const [step, setStep] = useState<"seats" | "checkout" | "confirmation">("seats");
   const [map, setMap] = useState<HallMap | null>(null);
@@ -87,8 +91,9 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
   };
   const [buyerErrors, setBuyerErrors] = useState<Record<string, string>>({});
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
-  const [ticketsNote, setTicketsNote] = useState<string | null>(null);
+  const [guestBlocked, setGuestBlocked] = useState(false);
   const holdingRef = useRef(false);
+  const guestHoldRefused = guestBlocked && !account;
 
   useEffect(() => {
     if (!canLoadMap) return;
@@ -189,6 +194,7 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
       const nextHold = await holdSeats(
         sessionId,
         selected.map((seat) => ({ seatId: seat.seatId, ticketType: seat.ticketType })),
+        { auth: Boolean(account) },
       );
       setHold(nextHold);
       setSelected((current) =>
@@ -211,7 +217,8 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
         );
         setMapAttempt((attempt) => attempt + 1);
       } else if (error instanceof PurchaseApiError && error.status === 401) {
-        setHoldMessage("Your session expired. Sign in again, then hold these seats.");
+        if (account) setHoldMessage("Your session expired. Sign in again, then hold these seats.");
+        else setGuestBlocked(true);
       } else {
         setHoldMessage(userMessage(error, "The seats could not be held."));
       }
@@ -274,6 +281,24 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
         {blockedProfile && account?.profileComplete !== false ? <p className="purchase-block">{blockedProfile}</p> : null}
         {!blockedProfile && blockedAge ? <p className="purchase-block">{blockedAge}</p> : null}
         {expiredMessage ? <p className="purchase-block">{expiredMessage}</p> : null}
+        {guestHoldRefused ? (
+          <div className="purchase-guest">
+            <p>
+              Guest checkout cannot reserve these seats. The cinema service refused the hold because this browser is not signed in. No card was sent and no booking was saved.
+            </p>
+            <p>
+              Log in or create an account to pay for the seats already selected. An order is confirmed only after that payment is accepted. Creating an account with the same email does not attach this attempt, because the service stored nothing.
+            </p>
+            <div className="purchase-confirm-actions">
+              <button type="button" onClick={openLogin}>
+                Log in and continue
+              </button>
+              <button type="button" onClick={openRegister}>
+                Create an account
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {step === "seats" && canLoadMap ? (
           <SeatStep
@@ -300,6 +325,8 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
             }}
             onTicketType={(seatId, ticketType) => setSelected((current) => changeTicketType(current, seatId, ticketType))}
             onNext={() => void onNext()}
+            checkoutLabel={account ? "Next: Checkout" : "Continue as guest"}
+            onAccount={account ? undefined : openLogin}
           />
         ) : null}
 
@@ -311,6 +338,7 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
             total={total}
             buyer={checkoutBuyer}
             buyerErrors={buyerErrors}
+            authenticated={Boolean(account)}
             onBuyer={(next) => setBuyer(next)}
             onExpired={expireHold}
             onSeatConflict={(lost, message) => {
@@ -323,6 +351,13 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
               setMapAttempt((attempt) => attempt + 1);
             }}
             onSuccess={(next) => {
+              rememberBooking(next, {
+                movieTitle: movie?.title ?? "",
+                venueName: venue?.name ?? summary?.venueName ?? "",
+                hall: session?.hall ?? "",
+                date: session?.date ?? "",
+                time: session?.startTime ?? "",
+              });
               setOrder(next);
               setHold(null);
               setStep("confirmation");
@@ -338,8 +373,15 @@ function PurchaseDialog({ sessionId, onClose }: { sessionId: string; onClose: ()
             venueName={venue?.name ?? summary?.venueName ?? ""}
             hall={session?.hall ?? ""}
             when={session ? `${session.date} · ${session.startTime}` : ""}
-            ticketsNote={ticketsNote}
-            onTickets={() => setTicketsNote("My Tickets is not available because that page is not in this app.")}
+            signedIn={Boolean(account)}
+            onTickets={() => {
+              onClose();
+              navigate("/account");
+            }}
+            onView={() => {
+              onClose();
+              navigate(`/booking/${order.reference}`);
+            }}
             onClose={onClose}
           />
         ) : null}
@@ -378,6 +420,8 @@ function SeatStep({
   onToggle,
   onTicketType,
   onNext,
+  checkoutLabel,
+  onAccount,
 }: {
   map: HallMap | null;
   mapStatus: "loading" | "error" | "ready";
@@ -394,6 +438,8 @@ function SeatStep({
   onToggle: (seat: HallMap["sections"][number]["rows"][number]["seats"][number]) => void;
   onTicketType: (seatId: string, ticketType: TicketType) => void;
   onNext: () => void;
+  checkoutLabel: string;
+  onAccount?: () => void;
 }) {
   const childBlocked = childTicketsBlocked(ageRating);
   return (
@@ -448,8 +494,13 @@ function SeatStep({
           Subtotal <strong>{formatLari(total)}</strong>
         </p>
         <button type="button" className="purchase-next" disabled={!canContinue || holding} onClick={onNext}>
-          {holding ? "Holding seats…" : "Next: Checkout"}
+          {holding ? "Holding seats…" : checkoutLabel}
         </button>
+        {onAccount ? (
+          <button type="button" className="purchase-next purchase-next-secondary" onClick={onAccount}>
+            Pay with an account
+          </button>
+        ) : null}
       </aside>
     </div>
   );
@@ -533,6 +584,7 @@ function CheckoutStep({
   total,
   buyer,
   buyerErrors,
+  authenticated,
   onBuyer,
   onExpired,
   onSeatConflict,
@@ -545,6 +597,7 @@ function CheckoutStep({
   total: number;
   buyer: BuyerDetails;
   buyerErrors: Record<string, string>;
+  authenticated: boolean;
   onBuyer: (buyer: BuyerDetails) => void;
   onExpired: () => void;
   onSeatConflict: (lost: string[], message: string) => void;
@@ -621,6 +674,7 @@ function CheckoutStep({
           foyer: null,
         },
         { cardNumber, expiry, cvv },
+        { auth: authenticated },
       );
       setCardNumber("");
       setCvv("");
@@ -640,7 +694,11 @@ function CheckoutStep({
         setPaymentErrors(paymentMap);
         focusInvalid.current = true;
       } else if (error instanceof PurchaseApiError && error.status === 401) {
-        setFormError("Your session expired. Sign in again, then submit this order once.");
+        setFormError(
+          authenticated
+            ? "Your session expired. Sign in again, then submit this order once."
+            : "The cinema service refused this payment because there is no signed-in account. Nothing was charged and no booking was saved.",
+        );
       } else if (error instanceof PurchaseApiError && error.conflict === "seats") {
         onSeatConflict(error.conflictingSeatIds, error.message);
       } else {
@@ -989,8 +1047,9 @@ function ConfirmationStep({
   venueName,
   hall,
   when,
-  ticketsNote,
+  signedIn,
   onTickets,
+  onView,
   onClose,
 }: {
   order: ConfirmedOrder;
@@ -998,8 +1057,9 @@ function ConfirmationStep({
   venueName: string;
   hall: string;
   when: string;
-  ticketsNote: string | null;
+  signedIn: boolean;
   onTickets: () => void;
+  onView: () => void;
   onClose: () => void;
 }) {
   return (
@@ -1009,11 +1069,11 @@ function ConfirmationStep({
         Order reference <strong>{order.reference}</strong>
       </p>
       <p>
-        {movieTitle}
+        {order.movieTitle || movieTitle}
         <span>
-          {venueName} · {hall}
+          {order.venueName || venueName} · {order.hall || hall}
         </span>
-        <span>{when}</span>
+        <span>{order.date && order.time ? `${order.date} · ${order.time}` : when}</span>
       </p>
       <ul>
         {order.seats.map((seat) => (
@@ -1025,6 +1085,10 @@ function ConfirmationStep({
       <p>
         Paid <strong>{formatLari(order.total)}</strong>
       </p>
+      <p>The cinema service did not report a ticket email.</p>
+      {signedIn ? null : (
+        <p>This confirmation stays in this browser. An account created later with the same email does not receive the order, because the service has no verified way to attach it.</p>
+      )}
       {order.foyer ? (
         <p>
           {order.foyer.summary}
@@ -1032,11 +1096,15 @@ function ConfirmationStep({
           {order.foyer.pickupCode ? ` · Pickup ${order.foyer.pickupCode}` : ""}
         </p>
       ) : null}
-      {ticketsNote ? <p className="purchase-warn">{ticketsNote}</p> : null}
       <div className="purchase-confirm-actions">
-        <button type="button" onClick={onTickets}>
-          My Tickets
+        <button type="button" onClick={onView}>
+          View confirmation
         </button>
+        {signedIn ? (
+          <button type="button" onClick={onTickets}>
+            My Tickets
+          </button>
+        ) : null}
         <button type="button" onClick={onClose}>
           Close
         </button>

@@ -1,5 +1,4 @@
 import { useCallback, useContext } from "react";
-import { useAuth } from "../auth/useAuth";
 import { PurchaseContext } from "./purchase-context";
 
 export function usePurchase() {
@@ -9,6 +8,6 @@ export function usePurchase() {
 }
 
 export function useStartPurchase() {
-  const { requireAuth } = useAuth();
-  return useCallback((sessionId: string) => requireAuth({ type: "purchase", sessionId }), [requireAuth]);
+  const { openPurchase } = usePurchase();
+  return useCallback((sessionId: string) => openPurchase(sessionId), [openPurchase]);
 }

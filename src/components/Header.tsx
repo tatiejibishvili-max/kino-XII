@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import Button from "./Button";
 import { SearchIcon } from "./Icons";
@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export default function Header({ variant = "overlay" }: HeaderProps) {
-  const { account, openLogin, openRegister, logout } = useAuth();
+  const { account, openLogin, openRegister } = useAuth();
 
   return (
     <header className={variant === "solid" ? "header header--solid" : "header"}>
@@ -30,12 +30,10 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
 
       <div className="header-auth">
         {account ? (
-          <>
-            <span className="header-user">{account.username}</span>
-            <Button variant="light" onClick={logout}>
-              Log out
-            </Button>
-          </>
+          <Link className="account-link" to="/account" aria-label={`Account, ${account.fullName || account.username}`}>
+            {account.avatarUrl ? <img src={account.avatarUrl} alt="" /> : <span>{accountInitials(account.fullName || account.username)}</span>}
+            {account.profileComplete === false ? <i className="account-link-dot" /> : null}
+          </Link>
         ) : (
           <>
             <Button onClick={openRegister}>Sign up</Button>
@@ -47,4 +45,11 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
       </div>
     </header>
   );
+}
+
+function accountInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }

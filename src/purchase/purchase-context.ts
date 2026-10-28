@@ -1,9 +1,4 @@
 import { createContext } from "react";
-
-export interface PurchaseContextValue {
-  sessionId: string | null;
-  openPurchase: (sessionId: string) => void;
-  closePurchase: () => void;
-}
+import type { PurchaseContextValue } from "../types/purchase";
 
 export const PurchaseContext = createContext<PurchaseContextValue | null>(null);

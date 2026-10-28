@@ -429,6 +429,64 @@
   filter: none;
 }
 
+.purchase-next.purchase-next-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.purchase-guest {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 69, 58, 0.08);
+  color: #ffd0c8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.purchase-guest p {
+  margin: 0 0 8px;
+}
+
+.booking-main {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 28px var(--page-pad) 48px;
+}
+
+.booking-card {
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: #1d2031;
+}
+
+.booking-card h1,
+.booking-title {
+  margin: 0 0 8px;
+}
+
+.booking-kicker {
+  margin: 0 0 6px;
+  color: #4ade80;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.booking-card p,
+.booking-card li {
+  color: #d7d8e0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.booking-card ul {
+  margin: 12px 0;
+  padding-left: 18px;
+}
+
 .purchase-checkout {
   display: grid;
   gap: 4px;

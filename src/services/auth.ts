@@ -2,7 +2,9 @@
  * Account calls go to the Kino XII API.
  * The bearer token is stored for this browser tab. The password is never stored.
  */
+import type { ApiUser, AuthAccount, ProfileInput, RegistrationInput, RegistrationResult } from "../types/user";
 import { ApiError, apiRequest, readToken, writeToken } from "./api";
+
 export class AuthApiError extends Error {
   readonly status: number | null;
   readonly fieldErrors: Record<string, string>;
@@ -15,38 +17,7 @@ export class AuthApiError extends Error {
   }
 }
 
-export interface AuthAccount {
-  id: string;
-  username: string;
-  email: string;
-  dateOfBirth: string | null;
-  profileComplete: boolean | null;
-  avatarUrl: string | null;
-  fullName: string | null;
-  mobileNumber: string | null;
-}
-
-export interface RegistrationInput {
-  username: string;
-  email: string;
-  password: string;
-  avatar: File | null;
-}
-
-export type RegistrationResult = { status: "authenticated"; account: AuthAccount } | { status: "signed-up" };
-
 const ACCOUNT_KEY = "kino-xii-account";
-
-interface ApiUser {
-  id: number;
-  username: string;
-  email: string;
-  avatar: string | null;
-  fullName: string | null;
-  mobileNumber: string | null;
-  dateOfBirth: string | null;
-  profileComplete: boolean;
-}
 
 function accountFromUser(user: ApiUser): AuthAccount {
   return {
@@ -58,6 +29,7 @@ function accountFromUser(user: ApiUser): AuthAccount {
     avatarUrl: user.avatar,
     fullName: user.fullName,
     mobileNumber: user.mobileNumber,
+    createdAt: user.createdAt ?? null,
   };
 }
 
@@ -74,7 +46,12 @@ export function readStoredAccount(): AuthAccount | null {
     if (!parsed || typeof parsed !== "object") return null;
     const account = parsed as AuthAccount;
     if (typeof account.id !== "string" || typeof account.email !== "string" || typeof account.username !== "string") return null;
-    return { ...account, fullName: account.fullName ?? null, mobileNumber: account.mobileNumber ?? null };
+    return {
+      ...account,
+      fullName: account.fullName ?? null,
+      mobileNumber: account.mobileNumber ?? null,
+      createdAt: account.createdAt ?? null,
+    };
   } catch {
     return null;
   }
@@ -137,11 +114,12 @@ export async function fetchCurrentAccount(): Promise<AuthAccount | null> {
   }
 }
 
-export async function updateProfile(input: { fullName: string; mobileNumber: string; dateOfBirth: string }): Promise<AuthAccount> {
+export async function updateProfile(input: ProfileInput): Promise<AuthAccount> {
   const form = new FormData();
   form.set("fullName", input.fullName.trim());
   form.set("mobileNumber", input.mobileNumber.replace(/[\s()-]/g, ""));
   form.set("dateOfBirth", input.dateOfBirth);
+  if (input.avatar) form.set("avatar", input.avatar);
   try {
     const body = await apiRequest<{ data: ApiUser }>("/profile", { method: "PUT", body: form });
     return accountFromUser(body.data);

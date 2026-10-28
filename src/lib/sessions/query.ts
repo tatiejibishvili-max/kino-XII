@@ -5,6 +5,7 @@ import type {
   Session,
   SessionCatalog,
   SessionsFilters,
+  SessionsQueryResult,
   SessionView,
   SortId,
   TimeOfDayId,
@@ -15,14 +16,6 @@ const FORMAT_IDS = FORMATS.map((item) => item.id);
 const TIME_IDS = TIMES.map((item) => item.id);
 const SORT_IDS = SORTS.map((item) => item.id);
 const VENUE_IDS = VENUES.map((item) => item.id);
-
-export interface SessionsQueryResult {
-  filters: SessionsFilters;
-  groups: MovieSessionGroup[];
-  totalSessions: number;
-  totalPages: number;
-  replaceWith: string | null;
-}
 
 export function timeOfDay(startTime: string): TimeOfDayId {
   const [hourText, minuteText] = startTime.split(":");

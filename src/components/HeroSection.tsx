@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { FeaturedFilm } from "../services/movies";
+import type { FeaturedFilm } from "../types/movie";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, TicketIcon } from "./Icons";
 
 interface HeroSectionProps {

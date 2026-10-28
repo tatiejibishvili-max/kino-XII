@@ -1,5 +1,5 @@
 import { purchaseRestriction } from "./age";
-import type { HallMap, HallSeat, SelectedSeat, TicketType } from "../types/purchase";
+import type { HallMap, HallSeat, SeatViolation, SelectedSeat, TicketType } from "../types/purchase";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GEORGIAN_MOBILE = /^(?:\+995|995|0)?5\d{8}$/;
@@ -63,12 +63,6 @@ export function toggleSeat(
 
 export function changeTicketType(selected: SelectedSeat[], seatId: string, ticketType: TicketType): SelectedSeat[] {
   return selected.map((seat) => (seat.seatId === seatId ? { ...seat, ticketType } : seat));
-}
-
-export interface SeatViolation {
-  seatId: string;
-  code: string;
-  reason: string;
 }
 
 export function ticketViolations(selected: SelectedSeat[], ageRating: string): SeatViolation[] {

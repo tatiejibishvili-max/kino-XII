@@ -1,4 +1,4 @@
-import type { BuyerDetails, ConfirmedOrder, HallMap, OrderRequest, SeatHold, TicketType } from "../types/purchase";
+import type { ApiHold, ApiOrder, ApiSeatMap, BuyerDetails, ConfirmedOrder, HallMap, OrderRequest, SeatHold } from "../types/purchase";
 import { ApiError, apiRequest } from "./api";
 
 /**
@@ -28,30 +28,6 @@ export class PurchaseApiError extends Error {
     this.conflictingSeatIds = options.conflictingSeatIds ?? [];
     this.conflict = options.conflict ?? null;
   }
-}
-
-interface ApiSeat {
-  id: number;
-  code: string;
-  label: string;
-  state: "available" | "sold" | "held" | "unavailable";
-  aisleAfter?: boolean;
-}
-
-interface ApiSeatMap {
-  sections: { name: string; rows: { label: string; seats: ApiSeat[] }[] }[];
-}
-
-interface ApiHold {
-  holdId: string;
-  expiresAt: string;
-  seats: { seatId: number; code: string; price: number }[];
-}
-
-interface ApiOrder {
-  reference: string;
-  totalPrice: number;
-  tickets: { seatCode: string; ticketType: { slug: TicketType }; price: number }[];
 }
 
 function asPurchaseError(error: unknown): never {
@@ -101,10 +77,15 @@ export async function fetchHallMap(sessionId: string, adultPrice: number): Promi
   }
 }
 
-export async function holdSeats(sessionId: string, seats: { seatId: string; ticketType: string }[]): Promise<SeatHold> {
+export async function holdSeats(
+  sessionId: string,
+  seats: { seatId: string; ticketType: string }[],
+  options: { auth?: boolean } = {},
+): Promise<SeatHold> {
   try {
     const body = await apiRequest<{ data: ApiHold }>(`/sessions/${sessionId}/holds`, {
       method: "POST",
+      auth: options.auth,
       json: {
         seats: seats.map((seat) => ({ seatId: Number(seat.seatId), ticketType: seat.ticketType })),
       },
@@ -126,10 +107,12 @@ export async function releaseHold(_holdId: string): Promise<void> {
 export async function submitOrder(
   request: OrderRequest,
   payment: { cardNumber: string; expiry: string; cvv: string },
+  options: { auth?: boolean } = {},
 ): Promise<ConfirmedOrder> {
   try {
     const body = await apiRequest<{ data: ApiOrder }>("/orders", {
       method: "POST",
+      auth: options.auth,
       json: {
         holdId: request.holdId,
         fullName: request.buyer.fullName.trim(),
@@ -140,17 +123,26 @@ export async function submitOrder(
         cvv: payment.cvv,
       },
     });
+    const order = body.data;
+    const hall = order.session?.hall;
     return {
-      reference: body.data.reference,
-      total: body.data.totalPrice,
+      reference: order.reference,
+      status: order.status === "refunded" ? "refunded" : "paid",
+      total: order.totalPrice,
       currency: "GEL",
-      seats: body.data.tickets.map((ticket) => ({
+      seats: order.tickets.map((ticket) => ({
         code: ticket.seatCode,
-        ticketType: ticket.ticketType.slug,
+        ticketType: typeof ticket.ticketType === "string" ? ticket.ticketType : ticket.ticketType.slug,
         price: ticket.price,
       })),
       fees: 0,
       foyer: null,
+      email: order.contact?.email ?? request.buyer.email.trim(),
+      movieTitle: order.session?.movie?.title ?? "",
+      venueName: order.session?.venue?.name ?? "",
+      hall: typeof hall === "string" ? hall : hall?.name ?? "",
+      date: order.session?.date ?? "",
+      time: order.session?.time ?? "",
     };
   } catch (error) {
     asPurchaseError(error);

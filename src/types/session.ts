@@ -79,3 +79,80 @@ export interface HallSessionGroup {
   hall: string;
   sessions: SessionView[];
 }
+
+export interface SessionSummary {
+  session: Session;
+  movie: SessionMovie;
+  venueName: string;
+  formatLabel: string;
+  languageLabel: string;
+}
+
+export interface SessionsQueryResult {
+  filters: SessionsFilters;
+  groups: MovieSessionGroup[];
+  totalSessions: number;
+  totalPages: number;
+  replaceWith: string | null;
+}
+
+export interface ApiFormat {
+  slug: string;
+  name?: string;
+}
+
+export interface ApiVenue {
+  slug: string;
+  name: string;
+  city: string;
+  formats: ApiFormat[];
+}
+
+export interface ApiLanguage {
+  slug: string;
+  name: string;
+}
+
+export interface ApiSessionMovie {
+  slug: string;
+  title: string;
+  runtimeMinutes: number;
+  posterUrl?: string | null;
+  ageRating: { code: string };
+}
+
+export interface ApiCatalogueSession {
+  id: number;
+  date: string;
+  time: string;
+  price: number;
+  seatsLeft: number;
+  hall: { name: string };
+  venue: ApiVenue;
+  format: ApiFormat;
+  language: ApiLanguage;
+  movie: ApiSessionMovie;
+}
+
+export interface ApiSessionGroup {
+  movie: ApiSessionMovie;
+  sessions: ApiCatalogueSession[];
+}
+
+export interface ApiFilterOptions {
+  venues: ApiVenue[];
+  languages: ApiLanguage[];
+}
+
+export interface ApiSessionDetail {
+  id: number;
+  date: string;
+  time: string;
+  price: number;
+  seatsLeft: number;
+  hall: { name: string };
+  venue: { slug: string; name: string };
+  format: { slug: string; name: string };
+  language: { slug: string; name: string };
+  movie: ApiSessionMovie;
+}

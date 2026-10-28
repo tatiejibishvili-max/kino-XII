@@ -13,14 +13,15 @@ import {
   storeAccount,
   subscribeToComingSoon,
   updateProfile,
-  type AuthAccount,
-  type RegistrationInput,
 } from "../services/auth";
-import { AuthContext, type AuthModalMode, type PendingAction } from "./auth-context";
+import type { AuthModalMode, PendingAction } from "../types/auth";
+import type { AuthAccount, RegistrationInput } from "../types/user";
+import { AuthContext } from "./auth-context";
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [account, setAccount] = useState<AuthAccount | null>(() => readStoredAccount());
+  const [sessionReady, setSessionReady] = useState(false);
   const [modal, setModal] = useState<AuthModalMode>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -43,6 +44,9 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         // A failed refresh leaves the stored profile until the next 401.
+      })
+      .finally(() => {
+        if (active) setSessionReady(true);
       });
     return () => {
       active = false;
@@ -181,7 +185,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setModal(null);
   }, [clearPending]);
 
-  const saveProfile = useCallback(async (input: { fullName: string; mobileNumber: string; dateOfBirth: string }) => {
+  const saveProfile = useCallback(async (input: { fullName: string; mobileNumber: string; dateOfBirth: string; avatar?: File | null }) => {
     const next = await updateProfile(input);
     setAccount(next);
     return next;
@@ -214,6 +218,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       account,
+      sessionReady,
       modal,
       submitting,
       formError,
@@ -230,7 +235,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       pendingActionId,
       dismissNotice: () => setNotice(null),
     }),
-    [account, closeModal, fieldErrors, formError, login, logout, modal, notice, openLogin, openRegister, pendingActionId, register, requireAuth, saveProfile, submitting],
+    [account, closeModal, fieldErrors, formError, login, logout, modal, notice, openLogin, openRegister, pendingActionId, register, requireAuth, saveProfile, sessionReady, submitting],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

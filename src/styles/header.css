@@ -83,6 +83,10 @@
   gap: 10px;
 }
 
+.header .account-link {
+  flex: none;
+}
+
 @media (max-width: 860px) {
   .header {
     display: grid;

@@ -1,7 +1,17 @@
 import { addDays, formatISODate, startOfDay } from "../lib/sessions/dates";
 import { apiRequest } from "./api";
 import type { PosterTheme } from "../types/movie";
-import type { FormatId, Session, SessionCatalog, SessionMovie, Venue } from "../types/session";
+import type {
+  ApiFilterOptions,
+  ApiSessionDetail,
+  ApiSessionGroup,
+  FormatId,
+  Session,
+  SessionCatalog,
+  SessionMovie,
+  SessionSummary,
+  Venue,
+} from "../types/session";
 
 const FORMATS: FormatId[] = ["standard", "max", "atmos", "panorama", "motion"];
 
@@ -14,48 +24,6 @@ const PALETTES: PosterTheme[] = [
   { from: "#5c1e2c", to: "#12080c", accent: "#f2d2c8", spotlightX: 50 },
 ];
 
-interface ApiFormat {
-  slug: string;
-}
-
-interface ApiVenue {
-  slug: string;
-  name: string;
-  city: string;
-  formats: ApiFormat[];
-}
-
-interface ApiLanguage {
-  slug: string;
-  name: string;
-}
-
-interface ApiMovie {
-  slug: string;
-  title: string;
-  runtimeMinutes: number;
-  posterUrl?: string | null;
-  ageRating: { code: string };
-}
-
-interface ApiSession {
-  id: number;
-  date: string;
-  time: string;
-  price: number;
-  seatsLeft: number;
-  hall: { name: string };
-  venue: ApiVenue;
-  format: ApiFormat;
-  language: ApiLanguage;
-  movie: ApiMovie;
-}
-
-interface FilterOptions {
-  venues: ApiVenue[];
-  languages: ApiLanguage[];
-}
-
 let catalogRequest: Promise<SessionCatalog> | null = null;
 
 function posterFor(slug: string): PosterTheme {
@@ -67,12 +35,12 @@ function asFormat(slug: string): FormatId {
   return FORMATS.includes(slug as FormatId) ? (slug as FormatId) : "standard";
 }
 
-async function fetchDate(date: string): Promise<{ movie: ApiMovie; sessions: ApiSession[] }[]> {
-  const groups: { movie: ApiMovie; sessions: ApiSession[] }[] = [];
+async function fetchDate(date: string): Promise<ApiSessionGroup[]> {
+  const groups: ApiSessionGroup[] = [];
   let page = 1;
   let lastPage = 1;
   do {
-    const body = await apiRequest<{ data: { movie: ApiMovie; sessions: ApiSession[] }[]; meta: { lastPage: number } }>(
+    const body = await apiRequest<{ data: ApiSessionGroup[]; meta: { lastPage: number } }>(
       `/sessions?date=${date}&page=${page}`,
       { auth: false },
     );
@@ -87,7 +55,7 @@ async function fetchCatalog(): Promise<SessionCatalog> {
   const today = startOfDay(new Date());
   const dates = Array.from({ length: 7 }, (_, index) => formatISODate(addDays(today, index)));
   const [rawOptions, ...days] = await Promise.all([
-    apiRequest<FilterOptions | { data: FilterOptions }>("/filter-options", { auth: false }),
+    apiRequest<ApiFilterOptions | { data: ApiFilterOptions }>("/filter-options", { auth: false }),
     ...dates.map((date) => fetchDate(date)),
   ]);
   const options = "venues" in rawOptions ? rawOptions : rawOptions.data;
@@ -155,29 +123,8 @@ export function resetSessionCatalog() {
   catalogRequest = null;
 }
 
-export interface SessionSummary {
-  session: Session;
-  movie: SessionMovie;
-  venueName: string;
-  formatLabel: string;
-  languageLabel: string;
-}
-
 export async function loadSessionSummary(sessionId: string): Promise<SessionSummary> {
-  const body = await apiRequest<{
-    data: {
-      id: number;
-      date: string;
-      time: string;
-      price: number;
-      seatsLeft: number;
-      hall: { name: string };
-      venue: { slug: string; name: string };
-      format: { slug: string; name: string };
-      language: { slug: string; name: string };
-      movie: ApiMovie;
-    };
-  }>(`/sessions/${sessionId}`, { auth: false });
+  const body = await apiRequest<{ data: ApiSessionDetail }>(`/sessions/${sessionId}`, { auth: false });
   const item = body.data;
   const movie = item.movie;
   return {

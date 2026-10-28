@@ -1,0 +1,267 @@
+.account-main {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 24px;
+  width: min(1120px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 28px var(--page-pad) 48px;
+}
+
+.account-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: #1d2031;
+}
+
+.account-card h1,
+.account-card h2,
+.account-card h3 {
+  margin: 0;
+  color: #f5f5f7;
+}
+
+.account-card h1 {
+  font-size: 22px;
+}
+
+.account-card h2 {
+  font-size: 16px;
+}
+
+.account-card p {
+  margin: 6px 0 0;
+  color: #a4a6b0;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.account-identity {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.account-avatar,
+.account-link {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #080d1c;
+  color: #f5f5f7;
+  font-size: 18px;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.account-avatar img,
+.account-link img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-link {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: inherit;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.account-link-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e27e04;
+}
+
+.account-note {
+  color: #e27e04;
+}
+
+.account-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.account-form label {
+  display: grid;
+  gap: 6px;
+  color: #a4a6b0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.account-form input {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #1e2233;
+  color: #f5f5f7;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.account-form input[readonly] {
+  color: #a4a6b0;
+}
+
+.account-form input[aria-invalid="true"] {
+  border-color: #ff453a;
+}
+
+.account-form input:focus {
+  outline: none;
+  border-color: #ff3b1f;
+}
+
+.account-hint {
+  margin-top: 0;
+  font-size: 12px;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.account-primary,
+.account-secondary {
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-primary {
+  background: #ff321f;
+  color: #ffffff;
+}
+
+.account-primary:disabled,
+.account-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.account-secondary {
+  background: #080d1c;
+  color: #f5f5f7;
+}
+
+.account-password {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.account-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.account-tabs button {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: transparent;
+  color: #a4a6b0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-tabs button.is-selected {
+  border-color: #ff321f;
+  background: #262a3d;
+  color: #f5f5f7;
+}
+
+.account-bookings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-booking {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #080d1c;
+}
+
+.account-booking img,
+.account-poster-fallback {
+  width: 72px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #1d2031;
+}
+
+.account-booking h3 a {
+  color: #f5f5f7;
+  text-decoration: none;
+}
+
+.account-booking h3 a:hover {
+  color: #ff321f;
+}
+
+.account-status {
+  color: #35c779;
+  font-weight: 700;
+}
+
+.account-status.is-refunded {
+  color: #a4a6b0;
+}
+
+.account-skel {
+  height: 220px;
+  border-radius: 18px;
+}
+
+.account-ticket-skel {
+  height: 110px;
+  margin-top: 12px;
+  border-radius: 12px;
+}
+
+@media (max-width: 800px) {
+  .account-main {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 20px;
+  }
+}

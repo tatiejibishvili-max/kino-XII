@@ -13,7 +13,8 @@ import { purchaseRestriction } from "../lib/age";
 import { formatISODate, startOfDay } from "../lib/sessions/dates";
 import { useStartPurchase } from "../purchase/usePurchase";
 import { ApiError } from "../services/api";
-import { loadFilm, loadFilmSessions, type FilmDetail } from "../services/movies";
+import { loadFilm, loadFilmSessions } from "../services/movies";
+import type { FilmDetail } from "../types/movie";
 import type { HallSessionGroup } from "../types/session";
 
 function ratingTone(rating: string): "green" | "orange" | "red" {

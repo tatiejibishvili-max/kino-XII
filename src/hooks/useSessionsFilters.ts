@@ -9,8 +9,7 @@ import {
   toggleValue,
 } from "../lib/sessions/query";
 import { FORMATS, TIMES, VENUES } from "../data/sessionOptions";
-import type { FormatId, LanguageId, SessionCatalog, SessionsFilters, SortId, TimeOfDayId } from "../types/session";
-import type { SessionsQueryResult } from "../lib/sessions/query";
+import type { FormatId, LanguageId, SessionCatalog, SessionsFilters, SessionsQueryResult, SortId, TimeOfDayId } from "../types/session";
 
 const VENUE_ORDER = VENUES.map((venue) => venue.id);
 const FORMAT_ORDER = FORMATS.map((format) => format.id);

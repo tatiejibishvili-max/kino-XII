@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { loadHomeCatalogue, type HomeCatalogue } from "../services/movies";
+import { loadHomeCatalogue } from "../services/movies";
+import type { HomeCatalogue } from "../types/movie";
 
 interface HomeCatalogueState {
   status: "loading" | "ready" | "error";

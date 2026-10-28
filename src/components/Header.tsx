@@ -1,7 +1,7 @@
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import Button from "./Button";
-import { SearchIcon } from "./Icons";
+import HeaderSearch from "./HeaderSearch";
 import Logo from "./Logo";
 
 interface HeaderProps {
@@ -23,10 +23,7 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
         </NavLink>
       </nav>
 
-      <form className="search" role="search" onSubmit={(event) => event.preventDefault()}>
-        <SearchIcon />
-        <input type="search" placeholder="Search films and live events" aria-label="Search films and live events" />
-      </form>
+      <HeaderSearch />
 
       <div className="header-auth">
         {account ? (

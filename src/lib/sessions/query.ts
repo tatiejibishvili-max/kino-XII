@@ -140,6 +140,7 @@ export function toSessionView(session: Session, catalog: SessionCatalog): Sessio
     id: session.id,
     movieId: session.movieId,
     startTime: session.startTime,
+    startsAt: session.startsAt,
     formatLabel: format?.label ?? session.format,
     languageLabel: language?.label ?? session.language,
     venueName: venue?.name ?? session.venueId,

@@ -28,6 +28,7 @@ export interface Session {
   hall: string;
   date: string;
   startTime: string;
+  startsAt?: string;
   format: FormatId;
   language: LanguageId;
   price: number;
@@ -57,6 +58,7 @@ export interface SessionView {
   id: string;
   movieId: string;
   startTime: string;
+  startsAt?: string;
   formatLabel: string;
   languageLabel: string;
   languageCode?: string;
@@ -123,6 +125,7 @@ export interface ApiSessionMovie {
 
 export interface ApiCatalogueSession {
   id: number;
+  startsAt?: string;
   date: string;
   time: string;
   price: number;
@@ -146,6 +149,7 @@ export interface ApiFilterOptions {
 
 export interface ApiSessionDetail {
   id: number;
+  startsAt?: string;
   date: string;
   time: string;
   price: number;

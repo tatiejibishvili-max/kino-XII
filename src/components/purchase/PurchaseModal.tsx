@@ -680,9 +680,10 @@ function CheckoutStep({
       setCvv("");
       onSuccess(confirmed);
     } catch (error) {
-      if (error instanceof PurchaseApiError && error.status === 422 && Object.keys(error.fieldErrors).length === 0) {
-        if (error.message === EXPIRED_MESSAGE) onExpired();
-        else setFormError(userMessage(error, "The order could not be completed."));
+      if (error instanceof PurchaseApiError && error.status === 422 && (error.message === EXPIRED_MESSAGE || error.fieldErrors.holdId)) {
+        onExpired();
+      } else if (error instanceof PurchaseApiError && error.status === 422 && Object.keys(error.fieldErrors).length === 0) {
+        setFormError(userMessage(error, "The order could not be completed."));
       } else if (error instanceof PurchaseApiError && error.status === 422) {
         const buyerMap: Record<string, string> = {};
         const paymentMap: Record<string, string> = {};
@@ -690,9 +691,11 @@ function CheckoutStep({
           if (key === "cardNumber" || key === "expiry" || key === "cvv") paymentMap[key] = message;
           else buyerMap[key] = message;
         }
+        const highlightsField = Object.keys(paymentMap).length > 0 || Object.keys(buyerMap).some((key) => key === "fullName" || key === "email" || key === "mobile" || key === "mobileNumber");
         onFieldErrors(buyerMap);
         setPaymentErrors(paymentMap);
-        focusInvalid.current = true;
+        if (highlightsField) focusInvalid.current = true;
+        else setFormError(userMessage(error, "The order could not be completed."));
       } else if (error instanceof PurchaseApiError && error.status === 401) {
         setFormError(
           authenticated

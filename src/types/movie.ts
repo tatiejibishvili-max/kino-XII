@@ -80,12 +80,26 @@ export interface ApiFilm {
   ageRating: { code: string; description?: string };
   genres?: { name: string }[];
   formats?: { name: string }[];
+  kind?: "film" | "event";
+}
+
+export interface SearchResult {
+  slug: string;
+  title: string;
+  kind: "film" | "event";
+  runtimeMinutes: number;
+  posterUrl: string | null;
+  isComingSoon: boolean;
+  fromPrice: number | null;
+  ageRating: string;
+  genre: string;
 }
 
 export interface ApiMovieSessionGroup {
   venue: { name: string };
   sessions: {
     id: number;
+    startsAt?: string;
     time: string;
     price: number;
     seatsLeft: number;

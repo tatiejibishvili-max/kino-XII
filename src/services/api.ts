@@ -94,13 +94,13 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 async function toApiError(response: Response): Promise<ApiError> {
   const body = (await response.json().catch(() => null)) as {
     message?: string;
-    errors?: Record<string, string[]>;
+    errors?: Record<string, string | string[]>;
     contested?: string[];
   } | null;
   const fieldErrors: Record<string, string> = {};
   for (const [key, messages] of Object.entries(body?.errors ?? {})) {
-    const message = Array.isArray(messages) ? messages[0] : "";
-    if (message) fieldErrors[key] = message;
+    const message = Array.isArray(messages) ? messages.find((item) => typeof item === "string") : messages;
+    if (typeof message === "string" && message) fieldErrors[key] = message;
   }
   if (fieldErrors.password_confirmation) fieldErrors.confirmPassword = fieldErrors.password_confirmation;
   if (fieldErrors.mobileNumber) fieldErrors.mobile = fieldErrors.mobileNumber;

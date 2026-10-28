@@ -15,6 +15,12 @@ export function formatISODate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function sessionHasStarted(startsAt?: string, now = Date.now()): boolean {
+  if (!startsAt) return false;
+  const start = Date.parse(startsAt);
+  return Number.isFinite(start) && start <= now;
+}
+
 export function parseISODate(iso: string): Date {
   const [year, month, day] = iso.split("-").map(Number);
   return new Date(year, month - 1, day);

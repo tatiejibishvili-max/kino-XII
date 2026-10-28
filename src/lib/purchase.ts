@@ -157,6 +157,8 @@ export function formatHoldRemaining(expiresAt: string, now = Date.now()): string
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+export const EXPIRED_MESSAGE = "Your hold time expired. Please re-select your seats.";
+
 export function holdExpired(expiresAt: string, now = Date.now()): boolean {
   const end = Date.parse(expiresAt);
   return !Number.isFinite(end) || end <= now;

@@ -1,3 +1,4 @@
+import { sessionHasStarted } from "../../lib/sessions/dates";
 import { useStartPurchase } from "../../purchase/usePurchase";
 import type { SessionView } from "../../types/session";
 
@@ -14,12 +15,6 @@ function SeatMark() {
       <path d="M3.1 5V3.6A1.1 1.1 0 0 1 4.2 2.5h3.6A1.1 1.1 0 0 1 8.9 3.6V5" fill="none" stroke="currentColor" strokeWidth="1" />
     </svg>
   );
-}
-
-function sessionHasStarted(startsAt?: string, now = Date.now()): boolean {
-  if (!startsAt) return false;
-  const start = Date.parse(startsAt);
-  return Number.isFinite(start) && start <= now;
 }
 
 export default function SessionItem({ session, unavailable = false, layout = "default" }: SessionItemProps) {

@@ -1,7 +1,7 @@
 import { parseISODate } from "../lib/sessions/dates";
 import { formatSessionPrice } from "../lib/sessions/query";
 import type { HallSessionGroup, SessionView } from "../types/session";
-import type { ApiFilm, ApiMovieSessionGroup, FeaturedFilm, FilmDetail, HomeCatalogue, Movie, PosterTheme, SearchResult } from "../types/movie";
+import type { ApiFilm, ApiMovieSessionGroup, FeaturedFilm, FilmDetail, HomeCatalogue, Movie, PosterTheme } from "../types/movie";
 import { apiRequest } from "./api";
 
 const FALLBACK_POSTER: PosterTheme = { from: "#1a3d66", to: "#070c1c", accent: "#d7e4f2", spotlightX: 62 };
@@ -74,21 +74,6 @@ export async function loadHomeCatalogue(): Promise<HomeCatalogue> {
     nowPlaying: nowPlaying.map((film) => toMovie(film)),
     comingSoon: comingSoon.map((film) => toMovie(film, releaseLabel(film.releaseDate))),
   };
-}
-
-export async function searchTitles(query: string): Promise<SearchResult[]> {
-  const body = await apiRequest<{ data: ApiFilm[] }>(`/search?q=${encodeURIComponent(query)}`, { auth: false });
-  return body.data.map((film) => ({
-    slug: film.slug,
-    title: film.title,
-    kind: film.kind === "event" ? "event" : "film",
-    runtimeMinutes: film.runtimeMinutes,
-    posterUrl: film.posterUrl,
-    isComingSoon: Boolean(film.isComingSoon),
-    fromPrice: film.fromPrice,
-    ageRating: film.ageRating.code,
-    genre: film.genres?.[0]?.name ?? (film.kind === "event" ? "Live event" : "Film"),
-  }));
 }
 
 export async function loadFilm(slug: string): Promise<FilmDetail> {
